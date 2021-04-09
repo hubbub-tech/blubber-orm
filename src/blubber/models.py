@@ -130,11 +130,11 @@ class Addresses(Models):
                 AND address_apt = %s
                 AND address_zip = %s;""" # Note: no quotes
         data = (self.num, self.street, self.apt, self.zip_code)
-        cls._cur.execute(SQL, data)
+        self._cur.execute(SQL, data)
         occupants = []
-        for query in cls._cur.fetchall():
-            db_occupant = sql_to_dictionary(cls._cur, query)
-            occupants.append(cls(db_occupant))
+        for query in self._cur.fetchall():
+            db_occupant = sql_to_dictionary(self._cur, query)
+            occupants.append(Users(db_occupant))
         return occupants
 
     def items(self):
@@ -146,11 +146,11 @@ class Addresses(Models):
                 AND address_apt = %s
                 AND address_zip = %s;""" # Note: no quotes
         data = (self.num, self.street, self.apt, self.zip_code)
-        cls._cur.execute(SQL, data)
+        self._cur.execute(SQL, data)
         items = []
-        for query in cls._cur.fetchall():
-            db_item = sql_to_dictionary(cls._cur, query)
-            items.append(cls(db_item))
+        for query in self._cur.fetchall():
+            db_item = sql_to_dictionary(self._cur, query)
+            items.append(Items(db_item))
         return items
 
     def refresh(self):
@@ -311,7 +311,8 @@ class Items(AddressModels):
     def lock(self, user):
         SQL = f"UPDATE items SET is_locked = %s AND last_locked = %s WHERE id = %s;" # Note: no quotes
         data = (True, user.id, self.id)
-        cls._cur.execute(SQL, data)
+        self._cur.execute(SQL, data)
+        self._conn.commit()
         self = Items.get(self.id)
 
     def unlock(self):
@@ -321,7 +322,8 @@ class Items(AddressModels):
                 AND is_routed = %s
                 WHERE id = %s;""" # Note: no quotes
         data = (False, 0, False, self.id)
-        cls._cur.execute(SQL, data)
+        self._cur.execute(SQL, data)
+        self._conn.commit()
         self = Items.get(self.id)
 
     #determining if an item is available day-by-day
@@ -510,8 +512,7 @@ class Reservations(UserModels):
             reservation_keys['item_id'])
         cls._cur.execute(SQL, data)
         db_obj = sql_to_dictionary(cls._cur, cls._cur.fetchone())
-        obj = cls(db_obj)
-        return obj # query here
+        return cls(db_obj)
 
     @classmethod
     def delete(cls, reservation_keys):
@@ -617,8 +618,7 @@ class Logistics(AddressModels):
         data = (logistics_keys["dt_sched"], logistics_keys["renter_id"])
         cls._cur.execute(SQL, data)
         db_obj = sql_to_dictionary(cls._cur, cls._cur.fetchone())
-        obj = cls(db_obj)
-        return obj # query here
+        return cls(db_obj)
 
 class Pickups(Models):
     table_name = "pickups"
@@ -633,7 +633,7 @@ class Pickups(Models):
         SQL = f"SELECT order_id FROM order_pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
         data = (self.date_pickup, self._dt_sched, self._renter_id)
         self._cur.execute(SQL, data)
-        db_obj = sql_to_dictionary(self._cur, self._cur.fetchone())
+        db_obj = sql_to_dictionary(self._cur, self._cur.fetchone()) #NOTE is this just {"order_id": order_id}?
         return Orders.get(db_obj["order_id"])
 
 class Dropoffs(Models):
@@ -649,7 +649,7 @@ class Dropoffs(Models):
         SQL = f"SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
         data = (self.date_dropoff, self._dt_sched, self._renter_id)
         self._cur.execute(SQL, data)
-        db_obj = sql_to_dictionary(self._cur, self._cur.fetchone())
+        db_obj = sql_to_dictionary(self._cur, self._cur.fetchone()) #NOTE is this just {"order_id": order_id}?
         return Orders.get(db_obj["order_id"])
 
 class Reviews(UserModels):
@@ -671,12 +671,36 @@ class Testimonials(UserModels):
     table_name = "testimonials"
 
     def __init__(self, db_data):
-        self.date_created = db_data["date_created"]
+        self.date_created = db_data["date_made"]
         self.description = db_data["description"]
         self.user_id = db_data["user_id"]
+
+    @classmethod
+    def get(cls, testimonial_keys):
+        SQL = f"SELECT * FROM testimonials WHERE date_made = %s AND user_id = %s;" # Note: no quotes
+        data = (testimonial_keys["date_made"], testimonial_keys["user_id"])
+        cls._cur.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls._cur, cls._cur.fetchone())
+        return cls(db_obj)
+
+    @classmethod
+    def set(cls):
+        pass
 
 class Tags(Models):
     table_name = "tags"
 
     def __init__(self, db_data):
         self.name = db_data["tag_name"]
+
+    @classmethod
+    def get(cls, tag_name):
+        SQL = f"SELECT * FROM tags WHERE tag_name = %s;" # Note: no quotes
+        data = (testimonial_keys["tag_name"])
+        cls._cur.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls._cur, cls._cur.fetchone())
+        return cls(db_obj)
+
+    @classmethod
+    def set(cls):
+        pass

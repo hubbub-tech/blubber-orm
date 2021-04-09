@@ -534,6 +534,7 @@ class Orders(ReservationModels):
     table_name = "orders"
 
     def __init__(self, db_data):
+        #get reservation attributes, foreign keys
         super(Orders, self).__init__(db_data)
         #attributes
         self.id = db_data["id"] #primary key
@@ -571,13 +572,16 @@ class Orders(ReservationModels):
         return self.reservation.is_extended
 
     def extensions(self):
-        credentials = {
-            "renter_id": self._renter_id,
-            "item_id": self._item_id,
-            }
-        extensions = Extensions.filter(credentials)
-        #TODO: sort extensions sequentially, most recent to oldest
-        return extensions
+        if self.reservation.is_extended:
+            credentials = {
+                "renter_id": self._renter_id,
+                "item_id": self._item_id,
+                }
+            extensions = Extensions.filter(credentials)
+            #TODO: sort extensions sequentially, most recent to oldest
+            return extensions
+        else:
+            return None
 
     def identifier(self):
         return f"{self.renter.id}.{self.date.strftime("%Y.%m.%d")}"
@@ -586,6 +590,7 @@ class Extensions(ReservationModels):
     table_name = "extensions"
 
     def __init__(self, db_data):
+        #get reservation attributes, foreign keys
         super(Extensions, self).__init__(db_data)
         #attributes
         self.ext_charge = db_data["ext_charge"]
@@ -598,6 +603,7 @@ class Logistics(AddressModels):
     table_name = "logistics"
 
     def __init__(self, db_data):
+        #get address attributes, foreign keys
         super(Logistics, self).__init__(db_data)
         #attributes
         self.date_scheduled = db_data["dt_sched"]
@@ -692,6 +698,17 @@ class Tags(Models):
 
     def __init__(self, db_data):
         self.name = db_data["tag_name"]
+
+    @classmethod
+    def items_by_tag(cls, tag_name):
+        SQL = "SELECT * FROM tagging WHERE tag_name = %s;"
+        data = (tag_name, )
+        self._cur.execute(SQL, data)
+        items = []
+        for query in cls._cur.fetchall():
+            db_item_to_tag = sql_to_dictionary(cls._cur, query)
+            items.append(Items(db_item_to_tag["item_id"]))
+        return items
 
     @classmethod
     def get(cls, tag_name):

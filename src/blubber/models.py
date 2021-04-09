@@ -326,38 +326,6 @@ class Items(AddressModels):
         self._conn.commit()
         self = Items.get(self.id)
 
-    #determining if an item is available day-by-day
-    def check_availability(self, current_date=date.today()):
-        if self.calendar.size() > 0:
-            for res in self.calendar.reservations():
-                if res.date_started <= current_date and res.date_ended >= current_date:
-                    return False
-        return True
-
-    #proposing the next available rental period
-    def next_availability(self):
-        closest_operating_date = date.today() + timedelta(days=2)
-        bookings = self.calendar.reservations()
-        bookings.sort(key = lambda res: res.date_ended)
-        if self.calendar.size() == 0:
-            if closest_operating_date > self.calendar.date_started:
-                return [closest_operating_date, self.calendar.date_ended]
-            else:
-                return [self.calendar.date_started, self.calendar.date_ended]
-        for i in range(self.calendar.size()):
-            if i + 1 < self.calendar.size():
-                if bookings[i].date_ended < bookings[i + 1].date_started:
-                    return [bookings[i].date_ended, bookings[i + 1].date_started]
-            elif bookings[0].date_started > closest_operating_date:
-                if closest_operating_date >= self.calendar.date_started:
-                    return [closest_operating_date, bookings[0].date_started]
-                elif bookings[0].date_started > self.calendar.date_started:
-                    return [self.calendar.date_started, bookings[0].date_started]
-                else:
-                    return [bookings[i].date_ended, self.calendar.date_ended]
-            else:
-                return [bookings[i].date_ended, self.calendar.date_ended]
-
     def refresh(self):
         self = Items.get(self.id)
 
@@ -421,6 +389,38 @@ class Calendars(ItemModels):
 
     def size(self):
         return len(self.reservations())
+
+    #determining if an item is available day-by-day
+    def check_availability(self, comparison_date=date.today()):
+        if self.size() > 0:
+            for res in self.reservations():
+                if res.date_started <= comparison_date and res.date_ended >= comparison_date:
+                    return False
+        return True
+
+    #proposing the next available rental period
+    def next_availability(self):
+        closest_operating_date = date.today() + timedelta(days=2)
+        bookings = self.reservations()
+        bookings.sort(key = lambda res: res.date_ended)
+        if self.size() == 0:
+            if closest_operating_date > self.date_started:
+                return [closest_operating_date, self.date_ended]
+            else:
+                return [self.date_started, self.date_ended]
+        for i in range(self.size()):
+            if i + 1 < self.size():
+                if bookings[i].date_ended < bookings[i + 1].date_started:
+                    return [bookings[i].date_ended, bookings[i + 1].date_started]
+            elif bookings[0].date_started > closest_operating_date:
+                if closest_operating_date >= self.date_started:
+                    return [closest_operating_date, bookings[0].date_started]
+                elif bookings[0].date_started > self.date_started:
+                    return [self.date_started, bookings[0].date_started]
+                else:
+                    return [bookings[i].date_ended, self.date_ended]
+            else:
+                return [bookings[i].date_ended, self.date_ended]
 
     #schedules a reservation if valid, returns false if not, returns none if expired item
     def scheduler(self, new_res, bookings=None):
@@ -573,10 +573,7 @@ class Orders(ReservationModels):
 
     def extensions(self):
         if self.reservation.is_extended:
-            credentials = {
-                "renter_id": self._renter_id,
-                "item_id": self._item_id,
-                }
+            credentials = {"renter_id": self._renter_id, "item_id": self._item_id}
             extensions = Extensions.filter(credentials)
             #TODO: sort extensions sequentially, most recent to oldest
             return extensions

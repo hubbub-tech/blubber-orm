@@ -11,6 +11,7 @@ setup(name='blubber_orm',
       install_requires=[
         'psycopg2',
         'datetime',
+        'uritools'
         'pytz'
         ]
       zip_safe=False)

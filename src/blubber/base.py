@@ -1,12 +1,14 @@
 from blubber.db import get_db, close_db, sql_to_dictionary
 
-
 class Models:
     table_name = None
     _cur, _conn = get_db() #inefficient that this needs to load for every Models instance and insecure that it stays open
 
+    def __init__(self):
+        self.table_columns = self._get_columns()
+
     @classmethod
-    def write(cls, attributes):
+    def insert(cls, attributes):
         attributes_str = ", ".join(attributes.keys())
         values = ["%s" for attribute in attributes.values()]
         values_str = ", ".join(values)
@@ -53,8 +55,18 @@ class Models:
         cls._cur.execute(SQL, data)
         cls._conn.commit()
 
+    @classmethod
+    def is_indexed(cls, query_column_names):
+        return set(query_column_names).issubset(cls.table_columns)
+
+    def _get_columns(self):
+        self._cur.execute(f"SELECT * FROM {self.table_name} LIMIT 0")
+        columns = [attribute.name for attribute in self._cur.description]
+        return columns
+
     def refresh(self):
-        pass
+        cls = type(self)
+        self = cls.get(self.id)
 
     def __repr__(self):
         model = self.table_name.capitalize()

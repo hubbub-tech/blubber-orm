@@ -1,21 +1,29 @@
-from datetime import datetime, date, timedelta
 import pytz
+from datetime import datetime, date, timedelta
 
 from blubber.db import sql_to_dictionary
 from blubber.base import Models
 
 class ItemModels(Models):
     #Cant reference in __init__() because infinite loop
+    def __init__(self):
+        super(ItemModels, self).__init__()
+
     def item(self):
         return Items.get(self.item_id)
 
 class UserModels(Models):
     #Cant reference in __init__() because infinite loop
+    def __init__(self):
+        super(UserModels, self).__init__()
+
     def user(self):
         return Users.get(self.user_id)
 
 class AddressModels(Models):
+
     def __init__(self, db_data):
+        super(AddressModels, self).__init__()
         self._num = db_data["address_num"]
         self._street = db_data["address_street"]
         self._apt = db_data["address_apt"]
@@ -28,7 +36,10 @@ class AddressModels(Models):
         self.address = Addresses.get(address_keys)
 
 class ReservationModels(Models):
+    table_columns = ["res_date_start", "res_date_end", "renter_id", "item_id"]
+
     def __init__(self, db_data):
+        super(ReservationModels, self).__init__()
         self._date_started = db_data["res_date_start"]
         self._date_ended = db_data["res_date_end"]
         self._renter_id = db_data["renter_id"]
@@ -53,6 +64,7 @@ class Addresses(Models):
     table_name = "addresses"
 
     def __init__(self, db_data):
+        super(Addresses, self).__init__()
         self.num = db_data["num"]
         self.street = db_data["street"]
         self.apt = db_data["apt"]
@@ -100,7 +112,7 @@ class Addresses(Models):
         users = []
         for query in cls._cur.fetchall():
             db_user = sql_to_dictionary(cls._cur, query)
-            users.append(cls(db_user))
+            users.append(Users(db_user))
         return users
 
     @classmethod
@@ -112,7 +124,7 @@ class Addresses(Models):
         items = []
         for query in cls._cur.fetchall():
             db_item = sql_to_dictionary(cls._cur, query)
-            items.append(cls(db_item))
+            items.append(Items(db_item))
         return items
 
     def display(self):
@@ -158,8 +170,7 @@ class Addresses(Models):
             "num": self.num,
             "street": self.street,
             "apt": self.apt,
-            "zip": self.zip_code
-        }
+            "zip": self.zip_code}
         self = Addresses.get(address_keys)
 
 class Users(AddressModels):
@@ -203,13 +214,11 @@ class Users(AddressModels):
         credentials = {"renter_id": self.id}
         return Reservations.filter(credentials)
 
-    def refresh(self):
-        self = Users.get(self.id)
-
 class Profiles(UserModels):
     table_name = "profiles"
 
     def __init__(self, db_data):
+        super(Profiles, self).__init__()
         self.user_id = db_data["id"]
         self.phone = db_data["phone"]
         self.has_pic = db_data["has_pic"]
@@ -222,6 +231,7 @@ class Carts(UserModels):
     table_name = "carts"
 
     def __init__(self, db_data):
+        super(Carts, self).__init__()
         #attributes
         self.user_id = db_data["id"]
         self._total = db_data["total"]
@@ -326,13 +336,11 @@ class Items(AddressModels):
         self._conn.commit()
         self = Items.get(self.id)
 
-    def refresh(self):
-        self = Items.get(self.id)
-
 class Details(ItemModels):
     table_name = "details"
 
     def __init__(self, db_data):
+        super(Details, self).__init__()
         #attributes
         self.item_id = db_data["id"]
         self.description = db_data["description"]
@@ -379,6 +387,7 @@ class Calendars(ItemModels):
     table_name = "calendars"
 
     def __init__(self, db_data):
+        super(Calendars, self).__init__()
         self.item_id = db_data["id"]
         self.date_started = db_data["date_started"]
         self.date_ended = db_data["date_ended"]
@@ -458,6 +467,7 @@ class Reservations(UserModels):
     table_name = "reservations"
 
     def __init__(self, db_data):
+        super(Reservations, self).__init__()
         #attributes
         self.date_started = db_data["date_started"]
         self.date_ended = db_data["date_ended"]
@@ -479,15 +489,15 @@ class Reservations(UserModels):
 
     @classmethod
     def set(cls, reservation_keys, changes):
-        updates = [f"{changes} = %s" for changes in changes.keys()]
-        updates_str = " AND ".join(conditions)
-        updates = [change for change in changes.values()]
+        targets = [f"{target} = %s" for target in changes.keys()]
+        targets_str = " AND ".join(targets)
         SQL = f"""
-            UPDATE reservations SET {updates_str}
+            UPDATE reservations SET {targets_str}
                 WHERE date_started = %s
                 AND date_ended = %s
                 AND renter_id = %s
                 AND item_id = %s;""" # Note: no quotes
+        updates = [value for value in changes.values()]
         keys = [
             reservation_keys['date_started'],
             reservation_keys['date_ended'],
@@ -627,6 +637,7 @@ class Pickups(Models):
     table_name = "pickups"
 
     def __init__(self, db_data):
+        super(Pickups, self).__init__()
         self.date_pickup = db_data["pickup_date"]
         self._dt_sched = db_data["dt_sched"]
         self._renter_id = db_data["renter_id"]
@@ -643,6 +654,7 @@ class Dropoffs(Models):
     table_name = "dropoffs"
 
     def __init__(self, db_data):
+        super(Dropoffs, self).__init__()
         self.date_dropoff = db_data["dropoff_date"]
         self._dt_sched = db_data["dt_sched"]
         self._renter_id = db_data["renter_id"]
@@ -659,6 +671,7 @@ class Reviews(UserModels):
     table_name = "reviews"
 
     def __init__(self, db_data):
+        super(Reviews, self).__init__()
         #attributes
         self.id = db_data["id"]
         self.body = db_data["body"]
@@ -674,6 +687,7 @@ class Testimonials(UserModels):
     table_name = "testimonials"
 
     def __init__(self, db_data):
+        super(Testimonials, self).__init__()
         self.date_created = db_data["date_made"]
         self.description = db_data["description"]
         self.user_id = db_data["user_id"]
@@ -694,6 +708,7 @@ class Tags(Models):
     table_name = "tags"
 
     def __init__(self, db_data):
+        super(Tags, self).__init__()
         self.name = db_data["tag_name"]
 
     @classmethod

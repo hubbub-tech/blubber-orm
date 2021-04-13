@@ -1,11 +1,44 @@
-from blubber.db import get_db, close_db, sql_to_dictionary
+from abc import ABC, abstractmethod
+from blubber.db import DatabaseConnection, sql_to_dictionary
 
-class Models:
+class AbstractModels(ABC):
     table_name = None
-    _cur, _conn = get_db() #inefficient that this needs to load for every Models instance and insecure that it stays open
+    database = DatabaseConnection.get_instance()
 
     def __init__(self):
         self.table_columns = self._get_columns()
+        self._cur = self.database.cursor
+        self._conn = self.database.connection
+
+    @classmethod
+    @abstractmethod
+    def insert(cls, attributes):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def get(cls, id):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def set(cls, id, attributes):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def filter(cls, filters):
+        pass
+
+    @abstractmethod
+    def _get_columns(self):
+        pass
+
+    @abstractmethod
+    def refresh(self):
+        pass
+
+class Models(AbstractModels):
 
     @classmethod
     def insert(cls, attributes):
@@ -71,3 +104,65 @@ class Models:
     def __repr__(self):
         model = self.table_name.capitalize()
         return f"<type: {model}>"
+
+class ItemModelDecorator:
+    self._item = None
+
+    @property
+    def item(self):
+        model_class = type(self)
+        if "item_id" in model_class.__dict__.keys():
+            if self._item:
+                return self._item
+            return Items.get(self.item_id)
+        else:
+            raise Exception("This class cannot inherit from the item decorator. No item_id attribute.")
+
+class UserModelDecorator:
+    self._user = None
+
+    @property
+    def user(self):
+        model_class = type(self)
+        if "user_id" in model_class.__dict__.keys():
+            if self._user:
+                return self._user
+            return Users.get(self.user_id)
+        else:
+            raise Exception("This class cannot inherit from the user decorator. No user_id attribute.")
+
+class AddressModels(Models):
+
+    def __init__(self, db_data):
+        super(AddressModels, self).__init__()
+        self.num = db_data["address_num"]
+        self.street = db_data["address_street"]
+        self.apt = db_data["address_apt"]
+        self.zip = db_data["address_zip"]
+        address_keys = {
+            "num": self.num,
+            "street": self.street,
+            "apt": self.apt,
+            "zip": self.zip}
+        self.address = Addresses.get(address_keys)
+
+class ReservationModels(Models, ItemModelDecorator):
+
+    def __init__(self, db_data):
+        super(ReservationModels, self).__init__()
+        self.date_started = db_data["res_date_start"]
+        self.date_ended = db_data["res_date_end"]
+        self.renter_id = db_data["renter_id"]
+        self.item_id = db_data["item_id"]
+        reservation_keys = {
+            "date_started": self.date_started,
+            "date_ended": self.date_ended,
+            "renter_id": self.renter_id,
+            "item_id": self.item_id}
+        self.reservation = Reservations.get(reservation_keys)
+
+    def renter(self):
+        return Users.get(self.renter_id) #the renter id is stored then searched in users
+
+    def price(self):
+        return f"${self.reservation.charge:,.2f}"

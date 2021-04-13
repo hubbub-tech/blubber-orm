@@ -2,66 +2,12 @@ import pytz
 from datetime import datetime, date, timedelta
 
 from blubber.db import sql_to_dictionary
-from blubber.base import Models
-
-class ItemModels(Models):
-    #Cant reference in __init__() because infinite loop
-    def __init__(self):
-        super(ItemModels, self).__init__()
-
-    def item(self):
-        return Items.get(self.item_id)
-
-class UserModels(Models):
-    #Cant reference in __init__() because infinite loop
-    def __init__(self):
-        super(UserModels, self).__init__()
-
-    def user(self):
-        return Users.get(self.user_id)
-
-class AddressModels(Models):
-
-    def __init__(self, db_data):
-        super(AddressModels, self).__init__()
-        self._num = db_data["address_num"]
-        self._street = db_data["address_street"]
-        self._apt = db_data["address_apt"]
-        self._zip = db_data["address_zip"]
-        address_keys = {
-            "num": self._num,
-            "street": self._street,
-            "apt": self._apt,
-            "zip": self._zip}
-        self.address = Addresses.get(address_keys)
-
-class ReservationModels(Models):
-    table_columns = ["res_date_start", "res_date_end", "renter_id", "item_id"]
-
-    def __init__(self, db_data):
-        super(ReservationModels, self).__init__()
-        self._date_started = db_data["res_date_start"]
-        self._date_ended = db_data["res_date_end"]
-        self._renter_id = db_data["renter_id"]
-        self._item_id = db_data["item_id"]
-        reservation_keys = {
-            "date_started": self._date_started,
-            "date_ended": self._date_ended,
-            "renter_id": self._renter_id,
-            "item_id": self._item_id}
-        self.reservation = Reservations.get(reservation_keys)
-
-    def renter(self):
-        return Users.get(self._renter_id) #the renter id is stored then searched in users
-
-    def item(self):
-        return Items.get(self._item_id)
-
-    def price(self):
-        return f"${self.reservation.charge:,.2f}"
+from blubber.base import UserModelDecorator, ItemModelDecorator, Models, AddressModels, ReservationModels
 
 class Addresses(Models):
     table_name = "addresses"
+    _occupants = None
+    _items = None
 
     def __init__(self, db_data):
         super(Addresses, self).__init__()
@@ -133,37 +79,43 @@ class Addresses(Models):
     def region(self):
         return f"{self.city}, {self.state}"
 
+    @property
     def occupants(self):
-        #get all users at this address
-        SQL = f"""
-            SELECT * FROM users
-                WHERE address_num = %s
-                AND address_street = %s
-                AND address_apt = %s
-                AND address_zip = %s;""" # Note: no quotes
-        data = (self.num, self.street, self.apt, self.zip_code)
-        self._cur.execute(SQL, data)
-        occupants = []
-        for query in self._cur.fetchall():
-            db_occupant = sql_to_dictionary(self._cur, query)
-            occupants.append(Users(db_occupant))
-        return occupants
+        if not self._occupants:
+            #get all users at this address
+            SQL = f"""
+                SELECT * FROM users
+                    WHERE address_num = %s
+                    AND address_street = %s
+                    AND address_apt = %s
+                    AND address_zip = %s;""" # Note: no quotes
+            data = (self.num, self.street, self.apt, self.zip_code)
+            self._cur.execute(SQL, data)
+            occupants = []
+            for query in self._cur.fetchall():
+                db_occupant = sql_to_dictionary(self._cur, query)
+                occupants.append(Users(db_occupant))
+            self._occupants = occupants
+        return self._occupants
 
+    @property
     def items(self):
-        #get all items at this address
-        SQL = f"""
-            SELECT * FROM items
-                WHERE address_num = %s
-                AND address_street = %s
-                AND address_apt = %s
-                AND address_zip = %s;""" # Note: no quotes
-        data = (self.num, self.street, self.apt, self.zip_code)
-        self._cur.execute(SQL, data)
-        items = []
-        for query in self._cur.fetchall():
-            db_item = sql_to_dictionary(self._cur, query)
-            items.append(Items(db_item))
-        return items
+        if not self._items:
+            #get all items at this address
+            SQL = f"""
+                SELECT * FROM items
+                    WHERE address_num = %s
+                    AND address_street = %s
+                    AND address_apt = %s
+                    AND address_zip = %s;""" # Note: no quotes
+            data = (self.num, self.street, self.apt, self.zip_code)
+            self._cur.execute(SQL, data)
+            items = []
+            for query in self._cur.fetchall():
+                db_item = sql_to_dictionary(self._cur, query)
+                items.append(Items(db_item))
+            self._items = items
+        return self._items
 
     def refresh(self):
         address_keys = {
@@ -175,6 +127,10 @@ class Addresses(Models):
 
 class Users(AddressModels):
     table_name = "users"
+    _listings = None
+    _reviews = None
+    _testimonials = None
+    _reservations = None
 
     def __init__(self, db_data):
         #Users inherits address creation from AddressModels
@@ -192,29 +148,42 @@ class Users(AddressModels):
         self.cart = Carts.get(self.id)
         self.profile = Profiles.get(self.id)
 
-    def name(self):
-        return " ".join(self.name.split(",")).lower().title()
-
     def phone(self):
         return self.profile.phone
 
+    @property
+    def name(self):
+        return " ".join(self._name.split(",")).lower().title()
+
+    @property
     def listings(self):
-        credentials = {"lister_id": self.id}
-        return Items.filter(credentials)
+        if not self._listings:
+            credentials = {"lister_id": self.id}
+            self._listings = Items.filter(credentials)
+        return self._listings
 
+    @property
     def reviews(self):
-        credentials = {"author_id": self.id}
-        return Reviews.filter(credentials)
+        if not self._reviews:
+            credentials = {"author_id": self.id}
+            self._reviews = Reviews.filter(credentials)
+        return self._reviews
 
+    @property
     def testimonials(self):
-        credentials = {"user_id": self.id}
-        return Testimonials.filter(credentials)
+        if not self._testimonials:
+            credentials = {"user_id": self.id}
+            self._testimonials = Testimonials.filter(credentials)
+        return self._testimonials
 
+    @property
     def reservations(self):
-        credentials = {"renter_id": self.id}
-        return Reservations.filter(credentials)
+        if not self._reservations:
+            credentials = {"renter_id": self.id}
+            self._reservations = Reservations.filter(credentials)
+        return self._reservations
 
-class Profiles(UserModels):
+class Profiles(Models, UserModelDecorator):
     table_name = "profiles"
 
     def __init__(self, db_data):
@@ -227,8 +196,9 @@ class Profiles(UserModels):
     def refresh(self):
         self = Profiles.get(self.user_id)
 
-class Carts(UserModels):
+class Carts(Models, UserModelDecorator):
     table_name = "carts"
+    _contents = None
 
     def __init__(self, db_data):
         super(Carts, self).__init__()
@@ -236,20 +206,23 @@ class Carts(UserModels):
         self.user_id = db_data["id"]
         self._total = db_data["total"]
 
-    def total(self):
-        return f"${self._total:,.2f}"
+    def print_total(self):
+        return f"${round(self._total, 2):,.2f}"
 
     def size(self):
         return len(self.contents())
 
+    @property
     def contents(self):
-        SQL = f"SELECT item_id FROM shopping WHERE cart_id = %s;" #does this return a tuple or single value?
-        data = (self.user_id, )
-        self._cur.execute(SQL, data)
-        items = []
-        for id in self._cur.fetchall():
-            items.append(Items.get(id))
-        return items
+        if not self._contents:
+            SQL = f"SELECT item_id FROM shopping WHERE cart_id = %s;" #does this return a tuple or single value?
+            data = (self.user_id, )
+            self._cur.execute(SQL, data)
+            items = []
+            for id in self._cur.fetchall():
+                items.append(Items.get(id))
+            self._contents = items
+        return self._contents
 
     #for remove() and add(), you need to pass the specific res, bc no way to tell otherwise
     def remove(self, reservation):
@@ -277,6 +250,8 @@ class Carts(UserModels):
 
 class Items(AddressModels):
     table_name = "items"
+    _lister = None
+    _active_carts = None
 
     def __init__(self, db_data):
         #Users inherits address creation from AddressModels
@@ -285,7 +260,9 @@ class Items(AddressModels):
         self.id = db_data["id"]
         self.name = db_data["name"]
         self._price = db_data["price"]
-        self._price_per_day = self.price / 10.00
+        self._price_per_day = self.price / 10.00 #TODO
+        self._price_per_week = self.price / 5.00 #TODO
+        self._price_per_month = self.price / 2.00 #TODO
         self.is_available = db_data["is_available"]
         self.is_featured = db_data["is_featured"]
         self.dt_created = db_data["dt_created"]
@@ -296,27 +273,33 @@ class Items(AddressModels):
         self.details = Details.get(db_data["id"])
         self.calendar = Calendars.get(db_data["id"])
 
+    @property
     def lister(self):
-        return Users.get(self._lister_id)
+        if not self._lister:
+            self._lister = Users.get(self._lister_id)
+        return self._lister
+
+    @property
+    def reviews(self):
+        if not self._reviews:
+            credentials = {"item_id": self.id}
+            self._reviews = Reviews.filter(credentials)
+        return self._reviews
+
+    @property
+    def active_carts(self):
+        if not self._active_carts:
+            SQL = f"SELECT cart_id FROM shopping WHERE item_id = %s;" #does this return a tuple or single value?
+            data = (self.id, )
+            self._cur.execute(SQL, data)
+            carts = []
+            for id in self._cur.fetchall():
+                carts.append(Carts.get(id))
+            self._active_carts = carts
+        return self._active_carts
 
     def retail(self):
         return f"${self._price:,.2f}"
-
-    def price_per_day(self):
-        return f"${self._price_per_day:,.2f}"
-
-    def reviews(self):
-        credentials = {"item_id": self.id}
-        return Reviews.filter(credentials)
-
-    def active_carts(self):
-        SQL = f"SELECT cart_id FROM shopping WHERE item_id = %s;" #does this return a tuple or single value?
-        data = (self.id, )
-        self._cur.execute(SQL, data)
-        carts = []
-        for id in self._cur.fetchall():
-            carts.append(Carts.get(id))
-        return carts
 
     def lock(self, user):
         SQL = f"UPDATE items SET is_locked = %s AND last_locked = %s WHERE id = %s;" # Note: no quotes
@@ -336,7 +319,7 @@ class Items(AddressModels):
         self._conn.commit()
         self = Items.get(self.id)
 
-class Details(ItemModels):
+class Details(Models, ItemModelDecorator):
     table_name = "details"
 
     def __init__(self, db_data):
@@ -349,6 +332,7 @@ class Details(ItemModels):
         self._volume = db_data["volume"] #int
         #foreign_key
 
+    @property
     def condition(self):
         condition_key = {3: 'Very Good', 2: 'Good', 1: 'Acceptible'}
         if self.condition in range(1, 4):
@@ -356,6 +340,7 @@ class Details(ItemModels):
         else:
             return "Like New"
 
+    @property
     def weight(self):
         weight_key = {3: 'Heavy', 2: 'Medium', 1: 'Light'}
         if self.weight in range(1, 4):
@@ -363,6 +348,7 @@ class Details(ItemModels):
         else:
             return "Very Heavy"
 
+    @property
     def volume(self):
         volume_key = {3: "Large", 2: 'Medium', 1: 'Small'}
         if self.volume in range(1, 4):
@@ -383,7 +369,7 @@ class Details(ItemModels):
     def refresh(self):
         self = Details.get(self.item_id)
 
-class Calendars(ItemModels):
+class Calendars(Models, ItemModelDecorator):
     table_name = "calendars"
 
     def __init__(self, db_data):
@@ -463,7 +449,7 @@ class Calendars(ItemModels):
     def refresh(self):
         self = Calendars.get(self.item_id)
 
-class Reservations(UserModels):
+class Reservations(Models, UserModelDecorator, ItemModelDecorator):
     table_name = "reservations"
 
     def __init__(self, db_data):
@@ -477,9 +463,6 @@ class Reservations(UserModels):
         self._charge = db_data["charge"]
         self.item_id = db_data["item_id"]
         self.user_id = db_data["renter_id"]
-
-    def item(self):
-        return Items.get(self.item_id)
 
     def charge(self):
         return f"${self._charge:,.2f}"
@@ -542,6 +525,7 @@ class Reservations(UserModels):
 
 class Orders(ReservationModels):
     table_name = "orders"
+    _extensions = None
 
     def __init__(self, db_data):
         #get reservation attributes, foreign keys
@@ -581,14 +565,16 @@ class Orders(ReservationModels):
     def is_extended(self):
         return self.reservation.is_extended
 
+    @property
     def extensions(self):
         if self.reservation.is_extended:
-            credentials = {"renter_id": self._renter_id, "item_id": self._item_id}
-            extensions = Extensions.filter(credentials)
-            #TODO: sort extensions sequentially, most recent to oldest
-            return extensions
-        else:
-            return None
+            if not self._extensions:
+                credentials = {"renter_id": self._renter_id, "item_id": self._item_id}
+                extensions = Extensions.filter(credentials)
+                #TODO: sort extensions sequentially, most recent to oldest
+                self._extensions = extensions
+            return self._extensions
+        return None
 
     def identifier(self):
         return f"{self.renter.id}.{self.date.strftime("%Y.%m.%d")}"
@@ -635,6 +621,7 @@ class Logistics(AddressModels):
 
 class Pickups(Models):
     table_name = "pickups"
+    _order = None
 
     def __init__(self, db_data):
         super(Pickups, self).__init__()
@@ -643,15 +630,19 @@ class Pickups(Models):
         self._renter_id = db_data["renter_id"]
         self.logistics = Logistics.get(db_data)
 
+    @property
     def order(self):
-        SQL = f"SELECT order_id FROM order_pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
-        data = (self.date_pickup, self._dt_sched, self._renter_id)
-        self._cur.execute(SQL, data)
-        db_obj = sql_to_dictionary(self._cur, self._cur.fetchone()) #NOTE is this just {"order_id": order_id}?
-        return Orders.get(db_obj["order_id"])
+        if not self._order:
+            SQL = f"SELECT order_id FROM order_pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+            data = (self.date_pickup, self._dt_sched, self._renter_id)
+            self._cur.execute(SQL, data)
+            db_obj = sql_to_dictionary(self._cur, self._cur.fetchone()) #NOTE is this just {"order_id": order_id}?
+            self._order = Orders.get(db_obj["order_id"])
+        return self._order
 
 class Dropoffs(Models):
     table_name = "dropoffs"
+    _order = None
 
     def __init__(self, db_data):
         super(Dropoffs, self).__init__()
@@ -660,14 +651,17 @@ class Dropoffs(Models):
         self._renter_id = db_data["renter_id"]
         self.logistics = Logistics.get(db_data)
 
+    @property
     def order(self):
-        SQL = f"SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
-        data = (self.date_dropoff, self._dt_sched, self._renter_id)
-        self._cur.execute(SQL, data)
-        db_obj = sql_to_dictionary(self._cur, self._cur.fetchone()) #NOTE is this just {"order_id": order_id}?
-        return Orders.get(db_obj["order_id"])
+        if not self._order:
+            SQL = f"SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+            data = (self.date_dropoff, self._dt_sched, self._renter_id)
+            self._cur.execute(SQL, data)
+            db_obj = sql_to_dictionary(self._cur, self._cur.fetchone()) #NOTE is this just {"order_id": order_id}?
+            self._order = Orders.get(db_obj["order_id"])
+        return self._order
 
-class Reviews(UserModels):
+class Reviews(Models, UserModelDecorator, ItemModelDecorator):
     table_name = "reviews"
 
     def __init__(self, db_data):
@@ -680,10 +674,7 @@ class Reviews(UserModels):
         self.item_id = db_data["item_id"]
         self.user_id = db_data["author_id"]
 
-    def item(self):
-        return Items.get(self.item_id)
-
-class Testimonials(UserModels):
+class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"
 
     def __init__(self, db_data):

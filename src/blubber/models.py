@@ -129,6 +129,8 @@ class Users(AddressModels):
     table_name = "users"
     _listings = None
     _reviews = None
+    _cart = None
+    _profile = None
     _testimonials = None
     _reservations = None
 
@@ -144,12 +146,21 @@ class Users(AddressModels):
         self.dt_joined = db_data["dt_joined"]
         self.dt_last_active = db_data["dt_last_active"]
         self.is_blocked = db_data["is_blocked"]
-        #foreign keys
-        self.cart = Carts.get(self.id)
-        self.profile = Profiles.get(self.id)
 
     def phone(self):
         return self.profile.phone
+
+    @property
+    def cart(self):
+        if not self._cart:
+            self._cart = Carts.get(self.id)
+        return self._cart
+
+    @property
+    def profile(self):
+        if not self._profile:
+            self._profile = Profiles.get(self.id)
+        return self._profile
 
     @property
     def name(self):
@@ -251,6 +262,8 @@ class Carts(Models, UserModelDecorator):
 class Items(AddressModels):
     table_name = "items"
     _lister = None
+    _details = None
+    _calendar = None
     _active_carts = None
 
     def __init__(self, db_data):
@@ -270,8 +283,18 @@ class Items(AddressModels):
         self.is_routed = db_data["is_routed"]
         self.last_locked = db_data["last_locked"]
         self._lister_id = db_data["lister_id"]
-        self.details = Details.get(db_data["id"])
-        self.calendar = Calendars.get(db_data["id"])
+
+    @property
+    def details(self):
+        if not self._details:
+            self._details = Details.get(self.id)
+        return self._details
+
+    @property
+    def calendar(self):
+        if not self._calendar:
+            self._calendar = Calendars.get(self.id)
+        return self._calendar
 
     @property
     def lister(self):
@@ -330,29 +353,28 @@ class Details(Models, ItemModelDecorator):
         self._condition = db_data["condition"] #int
         self._weight = db_data["weight"] #int
         self._volume = db_data["volume"] #int
-        #foreign_key
 
     @property
     def condition(self):
         condition_key = {3: 'Very Good', 2: 'Good', 1: 'Acceptible'}
-        if self.condition in range(1, 4):
-            return condition_key[self.condition]
+        if self._condition in range(1, 4):
+            return condition_key[self._condition]
         else:
             return "Like New"
 
     @property
     def weight(self):
         weight_key = {3: 'Heavy', 2: 'Medium', 1: 'Light'}
-        if self.weight in range(1, 4):
-            return weight_key[self.weight]
+        if self._weight in range(1, 4):
+            return weight_key[self._weight]
         else:
             return "Very Heavy"
 
     @property
     def volume(self):
         volume_key = {3: "Large", 2: 'Medium', 1: 'Small'}
-        if self.volume in range(1, 4):
-            return volume_key[self.volume]
+        if self._volume in range(1, 4):
+            return volume_key[self._volume]
         else:
             return "Very Large"
 
@@ -371,6 +393,7 @@ class Details(Models, ItemModelDecorator):
 
 class Calendars(Models, ItemModelDecorator):
     table_name = "calendars"
+    _reservations = None
 
     def __init__(self, db_data):
         super(Calendars, self).__init__()
@@ -378,17 +401,20 @@ class Calendars(Models, ItemModelDecorator):
         self.date_started = db_data["date_started"]
         self.date_ended = db_data["date_ended"]
 
+    @property
     def reservations(self):
-        credentials = {"item_id": self.item_id}
-        return Reservations.filter(credentials)
+        if not self._reservations:
+            credentials = {"item_id": self.item_id}
+            self._reservations = Reservations.filter(credentials)
+        return self._reservations
 
     def size(self):
-        return len(self.reservations())
+        return len(self.reservations)
 
     #determining if an item is available day-by-day
     def check_availability(self, comparison_date=date.today()):
         if self.size() > 0:
-            for res in self.reservations():
+            for res in self.reservations:
                 if res.date_started <= comparison_date and res.date_ended >= comparison_date:
                     return False
         return True
@@ -396,7 +422,7 @@ class Calendars(Models, ItemModelDecorator):
     #proposing the next available rental period
     def next_availability(self):
         closest_operating_date = date.today() + timedelta(days=2)
-        bookings = self.reservations()
+        bookings = self.reservations
         bookings.sort(key = lambda res: res.date_ended)
         if self.size() == 0:
             if closest_operating_date > self.date_started:
@@ -420,7 +446,7 @@ class Calendars(Models, ItemModelDecorator):
     #schedules a reservation if valid, returns false if not, returns none if expired item
     def scheduler(self, new_res, bookings=None):
         if not bookings:
-            bookings = self.reservations()
+            bookings = self.reservations
             bookings.sort(key = lambda res: res.date_ended)
         _bookings = [res for res in bookings]
         if len(_bookings) > 0:
@@ -438,7 +464,7 @@ class Calendars(Models, ItemModelDecorator):
 
     def get_booked_days(self, month):
         booked_days = []
-        bookings = self.reservations()
+        bookings = self.reservations
         for res in bookings:
             booked_day = res.date_stated
             while booked_day.strftime("%m") == month:
@@ -538,6 +564,17 @@ class Orders(ReservationModels):
         self.is_pickup_scheduled = db_data["is_pick_sched"]
         self._lister_id = db_data["lister_id"]
 
+    @property
+    def extensions(self):
+        if self.reservation.is_extended:
+            if not self._extensions:
+                credentials = {"renter_id": self._renter_id, "item_id": self._item_id}
+                extensions = Extensions.filter(credentials)
+                #TODO: sort extensions sequentially, most recent to oldest
+                self._extensions = extensions
+            return self._extensions
+        return None
+
     def get_pickup(self):
         if self.is_pickup_scheduled:
             SQL = f"SELECT pickup_date, dt_sched, renter_id FROM order_pickups WHERE order_id = %s;" # Note: no quotes
@@ -565,17 +602,6 @@ class Orders(ReservationModels):
     def is_extended(self):
         return self.reservation.is_extended
 
-    @property
-    def extensions(self):
-        if self.reservation.is_extended:
-            if not self._extensions:
-                credentials = {"renter_id": self._renter_id, "item_id": self._item_id}
-                extensions = Extensions.filter(credentials)
-                #TODO: sort extensions sequentially, most recent to oldest
-                self._extensions = extensions
-            return self._extensions
-        return None
-
     def identifier(self):
         return f"{self.renter.id}.{self.date.strftime("%Y.%m.%d")}"
 
@@ -602,14 +628,11 @@ class Logistics(AddressModels):
         self.date_scheduled = db_data["dt_sched"]
         self.notes = db_data["notes"]
         self.referral = db_data["referral"]
-        self._timeslots = db_data["timeslots"]
+        self.timeslots = db_data["timeslots"].split(",")
         self.renter_id = db_data["renter_id"] #the renter id is stored then searched in users
 
     def renter(self):
         return Users.get(self.renter_id)
-
-    def timeslots(self):
-        return self._timelots.split(",")
 
     @classmethod
     def get(cls, logistics_keys):
@@ -679,7 +702,7 @@ class Testimonials(Models, UserModelDecorator):
 
     def __init__(self, db_data):
         super(Testimonials, self).__init__()
-        self.date_created = db_data["date_made"]
+        self.date_made = db_data["date_made"]
         self.description = db_data["description"]
         self.user_id = db_data["user_id"]
 
@@ -693,7 +716,20 @@ class Testimonials(Models, UserModelDecorator):
 
     @classmethod
     def set(cls):
-        pass
+        raise Exception("Testimonials are not editable. Make a new one instead.")
+
+    @classmethod
+    def delete(cls, testimonial_keys):
+        SQL = f"DELETE * FROM {cls.table_name} WHERE date_made = %s AND user_id = %s;" # Note: no quotes
+        data = (testimonial_keys["date_made"], testimonial_keys["user_id"])
+        cls._cur.execute(SQL, data)
+        cls._conn.commit()
+
+    def refresh(self):
+        testimonial_keys = {
+            "date_made": self.date_made,
+            "user_id": self.user_id}
+        self = Tags.get(testimonial_keys)
 
 class Tags(Models):
     table_name = "tags"
@@ -723,4 +759,14 @@ class Tags(Models):
 
     @classmethod
     def set(cls):
-        pass
+        raise Exception("Tags are not editable. Make a new one instead.")
+
+    @classmethod
+    def delete(cls, name):
+        SQL = f"DELETE * FROM {cls.table_name} WHERE tag_name = %s;" # Note: no quotes
+        data = (name, )
+        cls._cur.execute(SQL, data)
+        cls._conn.commit()
+
+    def refresh(self):
+        self = Tags.get(self.name)

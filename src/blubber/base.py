@@ -88,9 +88,20 @@ class Models(AbstractModels):
         cls._cur.execute(SQL, data)
         cls._conn.commit()
 
+    #returns the element that was not in the table columns so you can fix
     @classmethod
     def is_indexed(cls, query_column_names):
-        return set(query_column_names).issubset(cls.table_columns)
+        _query_column_names = query_column_names
+        _comparison_column_name = _query_column_names.pop(0)
+        if set([_comparison_column_name]).issubset(cls.table_columns):
+            if len(_query_column_names) > 0:
+                return cls.is_indexed(_query_column_names)
+            else:
+                return True
+        else:
+            #TODO: make an exception that logs to error file
+            print("This element was not in column names: ", _comparison_column_name)
+            return False
 
     def _get_columns(self):
         self._cur.execute(f"SELECT * FROM {self.table_name} LIMIT 0")

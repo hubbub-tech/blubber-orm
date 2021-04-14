@@ -8,6 +8,20 @@ def sql_to_dictionary(cursor, sql_query):
         to_dictionary[attribute.name] = sql_query[attr_index]
     return to_dictionary
 
+def parse_uri(database_uri):
+    not_postgres_error = "This URI is not for a PostgreSQL database."
+    assert("postgres://" in database_uri or "pg://" in database_uri), not_postgres_error
+    uri_credentials = urisplit(database_uri)
+    user, password = uri_credentials.userinfo.split(':')
+    parsed_credentials = {
+        "dbname": uri_credentials.path.replace("/", ""),
+        "user": user,
+        "password": password,
+        "host": credentials.host,
+        "port": credentials.port
+    }
+    return parsed_credentials
+
 #simple singleton design pattern
 class DatabaseConnection:
     _instance = None
@@ -16,7 +30,8 @@ class DatabaseConnection:
 
     def __init__(self):
         if DatabaseConnection._instance:
-            raise Exception("This class is a singleton!")
+            #TODO: log that this problem happened
+            raise Exception("Database instance should only be created once.")
         else:
             DatabaseConnection.cursor, DatabaseConnection.connection = DatabaseConnection.get_db()
             DatabaseConnection._instance = self
@@ -30,17 +45,18 @@ class DatabaseConnection:
     #returns a database connection by reading the uri from the environment
     @staticmethod
     def get_db():
+        conn = None
+        cur = None
         try:
             #build exception for when URI cannot be found in environment
-            credentials = urisplit(os.environ['DATABASE_URI'])
-        except:
-            print("Can't find URI in environment. Make sure its named 'DATABASE_URI'.")
-            return None, None
-        if credentials.scheme == "postgres":
-            dbname = credentials.path.replace("/", "")
-            user, password = credentials.userinfo.split(':')
+            database_uri = os.environ['DATABASE_URI']
+            parse_uri(database_uri)
+        except AssertionError as not_postgres_error:
+            #TODO: log error to file with traceback
+            print(not_postgres_error)
+        else:
+            # establish connection
             try:
-                # establish connection
                 conn = psycopg2.connect(
                     dbname=dbname,
                     user=user,
@@ -48,15 +64,14 @@ class DatabaseConnection:
                     host=credentials.host,
                     port=credentials.port
                 )
+            except Exception as connection_error:
+                #TODO: log error to file with traceback
+                print(connection_error)
+            else:
                 #call the 'cursor' to make edits/db calls
                 cur = conn.cursor()
-                return cur, conn
-            except:
-                print("Error, failed to establish connection with the database.")
-                return None, None
-        else:
-            print("Error, Not a postgres database.")
-            return None, None
+        finally:
+            return cur, conn
 
     #we need to close the db and the connect established in 'get_db'
     @classmethod

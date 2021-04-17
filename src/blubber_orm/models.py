@@ -1,8 +1,8 @@
 import pytz
 from datetime import datetime, date, timedelta
 
-from blubber.db import sql_to_dictionary
-from blubber.base import UserModelDecorator, ItemModelDecorator, Models, AddressModels, ReservationModels
+from db import sql_to_dictionary
+from base import UserModelDecorator, ItemModelDecorator, Models, AddressModels, ReservationModels
 
 class Addresses(Models):
     table_name = "addresses"
@@ -17,6 +17,7 @@ class Addresses(Models):
         self.city = db_data["city"]
         self.state = db_data["state"]
         self.zip_code = db_data["zip"]
+        return self
 
     @classmethod
     def get(cls, address_keys):
@@ -146,6 +147,7 @@ class Users(AddressModels):
         self.dt_joined = db_data["dt_joined"]
         self.dt_last_active = db_data["dt_last_active"]
         self.is_blocked = db_data["is_blocked"]
+        return self
 
     def phone(self):
         return self.profile.phone
@@ -203,6 +205,7 @@ class Profiles(Models, UserModelDecorator):
         self.phone = db_data["phone"]
         self.has_pic = db_data["has_pic"]
         self.bio = db_data["bio"]
+        return self
 
     def refresh(self):
         self = Profiles.get(self.user_id)
@@ -216,6 +219,7 @@ class Carts(Models, UserModelDecorator):
         #attributes
         self.user_id = db_data["id"]
         self._total = db_data["total"]
+        return self
 
     def print_total(self):
         return f"${round(self._total, 2):,.2f}"
@@ -283,6 +287,7 @@ class Items(AddressModels):
         self.is_routed = db_data["is_routed"]
         self.last_locked = db_data["last_locked"]
         self._lister_id = db_data["lister_id"]
+        return self
 
     @property
     def details(self):
@@ -353,6 +358,7 @@ class Details(Models, ItemModelDecorator):
         self._condition = db_data["condition"] #int
         self._weight = db_data["weight"] #int
         self._volume = db_data["volume"] #int
+        return self
 
     @property
     def condition(self):
@@ -400,12 +406,16 @@ class Calendars(Models, ItemModelDecorator):
         self.item_id = db_data["id"]
         self.date_started = db_data["date_started"]
         self.date_ended = db_data["date_ended"]
+        return self
 
     @property
     def reservations(self):
         if not self._reservations:
-            credentials = {"item_id": self.item_id}
-            self._reservations = Reservations.filter(credentials)
+            filters = {
+                "item_id": self.item_id,
+                "is_calendared": True,
+                "is_expired": False}
+            self._reservations = Reservations.filter(filters)
         return self._reservations
 
     def size(self):
@@ -489,12 +499,54 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
         self._charge = db_data["charge"]
         self.item_id = db_data["item_id"]
         self.user_id = db_data["renter_id"]
+        return self
 
     def charge(self):
         return f"${self._charge:,.2f}"
 
     def length(self):
         return (self.date_started - self.date_ended).days
+
+    def expire(self):
+        if date.today() > self.date_ended:
+            reservation_keys = {
+                "date_started": self.date_started,
+                "date_ended": self.date_ended,
+                "renter_id": self.user_id,
+                "item_id": self.item_id}
+            changes = {"is_expired": True}
+            Reservations.set(reservation_keys, changes)
+            self.refresh()
+
+    def reserve(self):
+        if self.is_calendared == False:
+            reservation_keys = {
+                "date_started": self.date_started,
+                "date_ended": self.date_ended,
+                "renter_id": self.user_id,
+                "item_id": self.item_id}
+            changes = {"is_calendared": True}
+            Reservations.set(reservation_keys, changes)
+            self.refresh()
+
+    def extend(self):
+        if self.is_extended == False:
+            reservation_keys = {
+                "date_started": self.date_started,
+                "date_ended": self.date_ended,
+                "renter_id": self.user_id,
+                "item_id": self.item_id}
+            changes = {"is_extended": True}
+            Reservations.set(reservation_keys, changes)
+            self.refresh()
+
+    def refresh(self):
+        reservation_keys = {
+            "date_started": self.date_started,
+            "date_ended": self.date_ended,
+            "renter_id": self.user_id,
+            "item_id": self.item_id}
+        self = Reservations.get(reservation_keys)
 
     @classmethod
     def set(cls, reservation_keys, changes):
@@ -563,6 +615,7 @@ class Orders(ReservationModels):
         self.is_dropoff_scheduled = db_data["is_dropoff_sched"]
         self.is_pickup_scheduled = db_data["is_pick_sched"]
         self._lister_id = db_data["lister_id"]
+        return self
 
     @property
     def extensions(self):
@@ -603,7 +656,8 @@ class Orders(ReservationModels):
         return self.reservation.is_extended
 
     def identifier(self):
-        return f"{self.renter.id}.{self.date.strftime("%Y.%m.%d")}"
+        renter = self.renter()
+        return f"{renter.id}.{self.date_placed.strftime('%Y.%m.%d')}"
 
 class Extensions(ReservationModels):
     table_name = "extensions"
@@ -614,6 +668,7 @@ class Extensions(ReservationModels):
         #attributes
         self.ext_charge = db_data["ext_charge"]
         self.ext_date_end = db_data["ext_date_end"]
+        return self
 
     def price(self):
         return f"${self.ext_charge:,.2f}"
@@ -630,6 +685,7 @@ class Logistics(AddressModels):
         self.referral = db_data["referral"]
         self.timeslots = db_data["timeslots"].split(",")
         self.renter_id = db_data["renter_id"] #the renter id is stored then searched in users
+        return self
 
     def renter(self):
         return Users.get(self.renter_id)
@@ -652,6 +708,7 @@ class Pickups(Models):
         self._dt_sched = db_data["dt_sched"]
         self._renter_id = db_data["renter_id"]
         self.logistics = Logistics.get(db_data)
+        return self
 
     @property
     def order(self):
@@ -673,6 +730,7 @@ class Dropoffs(Models):
         self._dt_sched = db_data["dt_sched"]
         self._renter_id = db_data["renter_id"]
         self.logistics = Logistics.get(db_data)
+        return self
 
     @property
     def order(self):
@@ -696,6 +754,7 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
         self.rating = db_data["rating"]
         self.item_id = db_data["item_id"]
         self.user_id = db_data["author_id"]
+        return self
 
 class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"
@@ -705,6 +764,7 @@ class Testimonials(Models, UserModelDecorator):
         self.date_made = db_data["date_made"]
         self.description = db_data["description"]
         self.user_id = db_data["user_id"]
+        return self
 
     @classmethod
     def get(cls, testimonial_keys):
@@ -737,6 +797,7 @@ class Tags(Models):
     def __init__(self, db_data):
         super(Tags, self).__init__()
         self.name = db_data["tag_name"]
+        return self
 
     @classmethod
     def items_by_tag(cls, tag_name):

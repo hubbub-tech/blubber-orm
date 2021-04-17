@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from blubber.db import DatabaseConnection, sql_to_dictionary
+from db import DatabaseConnection, sql_to_dictionary
 
 class AbstractModels(ABC):
     table_name = None
@@ -117,7 +117,7 @@ class Models(AbstractModels):
         return f"<type: {model}>"
 
 class ItemModelDecorator:
-    self._item = None
+    _item = None
 
     @property
     def item(self):
@@ -130,7 +130,7 @@ class ItemModelDecorator:
             raise Exception("This class cannot inherit from the item decorator. No item_id attribute.")
 
 class UserModelDecorator:
-    self._user = None
+    _user = None
 
     @property
     def user(self):

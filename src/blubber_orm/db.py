@@ -2,6 +2,9 @@ import os
 import psycopg2 #source docs: https://www.psycopg.org/docs/usage.html
 from uritools import urisplit
 
+#postgres app commands: https://kb.objectrocket.com/postgresql/how-to-run-an-sql-file-in-postgres-846
+#postgres app website: https://postgresapp.com/documentation/cli-tools.html
+
 def sql_to_dictionary(cursor, sql_query):
     to_dictionary = {}
     for attr_index, attribute in enumerate(cursor.description):
@@ -10,15 +13,15 @@ def sql_to_dictionary(cursor, sql_query):
 
 def parse_uri(database_uri):
     not_postgres_error = "This URI is not for a PostgreSQL database."
-    assert("postgres://" in database_uri or "pg://" in database_uri), not_postgres_error
+    assert("postgres://" in database_uri or "postgresql://" in database_uri), not_postgres_error
     uri_credentials = urisplit(database_uri)
     user, password = uri_credentials.userinfo.split(':')
     parsed_credentials = {
         "dbname": uri_credentials.path.replace("/", ""),
         "user": user,
         "password": password,
-        "host": credentials.host,
-        "port": credentials.port
+        "host": uri_credentials.host,
+        "port": uri_credentials.port
     }
     return parsed_credentials
 
@@ -33,8 +36,10 @@ class DatabaseConnection:
             #TODO: log that this problem happened
             raise Exception("Database instance should only be created once.")
         else:
+            print("getting db")
             DatabaseConnection.cursor, DatabaseConnection.connection = DatabaseConnection.get_db()
             DatabaseConnection._instance = self
+            print("got it", DatabaseConnection.cursor, DatabaseConnection.connection)
 
     @staticmethod
     def get_instance():
@@ -47,29 +52,34 @@ class DatabaseConnection:
     def get_db():
         conn = None
         cur = None
+        print("starting")
         try:
             #build exception for when URI cannot be found in environment
-            database_uri = os.environ['DATABASE_URI']
-            parse_uri(database_uri)
+            database_uri = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"
+            credentials = parse_uri(database_uri)
+            print("in the try")
         except AssertionError as not_postgres_error:
             #TODO: log error to file with traceback
             print(not_postgres_error)
+            print("in the exception")
         else:
             # establish connection
             try:
                 conn = psycopg2.connect(
-                    dbname=dbname,
-                    user=user,
-                    password=password,
-                    host=credentials.host,
-                    port=credentials.port
+                    dbname=credentials["dbname"],
+                    user=credentials["user"],
+                    password=credentials["password"],
+                    host=credentials["host"],
+                    port=credentials["port"]
                 )
+                print("successful connection")
             except Exception as connection_error:
                 #TODO: log error to file with traceback
                 print(connection_error)
             else:
                 #call the 'cursor' to make edits/db calls
                 cur = conn.cursor()
+                print("cursor")
         finally:
             return cur, conn
 

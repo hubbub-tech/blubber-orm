@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from db import DatabaseConnection, sql_to_dictionary
+from .db import DatabaseConnection, sql_to_dictionary
 
 class AbstractModels(ABC):
     table_name = None
@@ -7,8 +7,6 @@ class AbstractModels(ABC):
 
     def __init__(self):
         self.table_columns = self._get_columns()
-        self._cur = self.database.cursor
-        self._conn = self.database.connection
 
     @classmethod
     @abstractmethod
@@ -47,15 +45,15 @@ class Models(AbstractModels):
         values_str = ", ".join(values)
         SQL = f"INSERT INTO {cls.table_name} ({attributes_str}) VALUES ({values_str});"
         data = tuple(attributes.values())
-        cls._cur.execute(SQL, data)
-        cls._conn.commit()
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
 
     @classmethod
     def get(cls, id):
         SQL = f"SELECT * FROM {cls.table_name} WHERE id = %s;" # Note: no quotes
         data = (id, )
-        cls._cur.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls._cur, cls._cur.fetchone())
+        cls.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_obj)
 
     @classmethod
@@ -65,8 +63,8 @@ class Models(AbstractModels):
         updates = [parameters for parameters in attributes.values()]
         SQL = f"UPDATE {cls.table_name} SET {conditions_str} WHERE id = %s;" # Note: no quotes
         data = tuple(updates + [id])
-        cls._cur.execute(SQL, data)
-        cls._conn.commit()
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
 
     @classmethod
     def filter(cls, filters):
@@ -74,10 +72,10 @@ class Models(AbstractModels):
         conditions_str = " AND ".join(conditions)
         SQL = f"SELECT * FROM {cls.table_name} WHERE {conditions_str};" # Note: no quotes
         data = tuple([parameters for parameters in filters.values()])
-        cls._cur.execute(SQL, data)
+        cls.database.cursor.execute(SQL, data)
         obj_list = []
-        for query in cls._cur.fetchall():
-            db_obj = sql_to_dictionary(cls._cur, query)
+        for query in cls.database.cursor.fetchall():
+            db_obj = sql_to_dictionary(cls.database.cursor, query)
             obj_list.append(cls(db_obj))
         return obj_list # query here
 
@@ -85,8 +83,8 @@ class Models(AbstractModels):
     def delete(cls, id):
         SQL = f"DELETE * FROM {cls.table_name} WHERE id = %s;" # Note: no quotes
         data = (id, )
-        cls._cur.execute(SQL, data)
-        cls._conn.commit()
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
 
     #returns the element that was not in the table columns so you can fix
     @classmethod
@@ -104,8 +102,8 @@ class Models(AbstractModels):
             return False
 
     def _get_columns(self):
-        self._cur.execute(f"SELECT * FROM {self.table_name} LIMIT 0")
-        columns = [attribute.name for attribute in self._cur.description]
+        self.database.cursor.execute(f"SELECT * FROM {self.table_name} LIMIT 0")
+        columns = [attribute.name for attribute in self.database.cursor.description]
         return columns
 
     def refresh(self):

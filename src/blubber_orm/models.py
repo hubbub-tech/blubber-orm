@@ -1,8 +1,8 @@
 import pytz
 from datetime import datetime, date, timedelta
 
-from db import sql_to_dictionary
-from base import UserModelDecorator, ItemModelDecorator, Models, AddressModels, ReservationModels
+from .db import sql_to_dictionary
+from .base import UserModelDecorator, ItemModelDecorator, Models, AddressModels, ReservationModels
 
 class Addresses(Models):
     table_name = "addresses"
@@ -29,8 +29,8 @@ class Addresses(Models):
             address_keys['street'],
             address_keys['apt'],
             address_keys['zip'])
-        cls._cur.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls._cur, cls._cur.fetchone())
+        cls.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_obj) # query here
 
     @classmethod
@@ -47,18 +47,18 @@ class Addresses(Models):
             address_keys['street'],
             address_keys['apt'],
             address_keys['zip'])
-        cls._cur.execute(SQL, data)
-        cls._conn.commit()
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
 
     @classmethod
     def local_users(cls, zip_code):
         #get all items in this general location
         SQL = f"SELECT * FROM users WHERE address_zip = %s;" # Note: no quotes
         data = (zip_code, )
-        cls._cur.execute(SQL, data)
+        cls.database.cursor.execute(SQL, data)
         users = []
-        for query in cls._cur.fetchall():
-            db_user = sql_to_dictionary(cls._cur, query)
+        for query in cls.database.cursor.fetchall():
+            db_user = sql_to_dictionary(cls.database.cursor, query)
             users.append(Users(db_user))
         return users
 
@@ -67,10 +67,10 @@ class Addresses(Models):
         #get all items in this general location
         SQL = f"SELECT * FROM items WHERE address_zip = %s;" # Note: no quotes
         data = (zip_code, )
-        cls._cur.execute(SQL, data)
+        cls.database.cursor.execute(SQL, data)
         items = []
-        for query in cls._cur.fetchall():
-            db_item = sql_to_dictionary(cls._cur, query)
+        for query in cls.database.cursor.fetchall():
+            db_item = sql_to_dictionary(cls.database.cursor, query)
             items.append(Items(db_item))
         return items
 
@@ -91,10 +91,10 @@ class Addresses(Models):
                     AND address_apt = %s
                     AND address_zip = %s;""" # Note: no quotes
             data = (self.num, self.street, self.apt, self.zip_code)
-            self._cur.execute(SQL, data)
+            self.database.cursor.execute(SQL, data)
             occupants = []
-            for query in self._cur.fetchall():
-                db_occupant = sql_to_dictionary(self._cur, query)
+            for query in self.database.cursor.fetchall():
+                db_occupant = sql_to_dictionary(self.database.cursor, query)
                 occupants.append(Users(db_occupant))
             self._occupants = occupants
         return self._occupants
@@ -110,10 +110,10 @@ class Addresses(Models):
                     AND address_apt = %s
                     AND address_zip = %s;""" # Note: no quotes
             data = (self.num, self.street, self.apt, self.zip_code)
-            self._cur.execute(SQL, data)
+            self.database.cursor.execute(SQL, data)
             items = []
-            for query in self._cur.fetchall():
-                db_item = sql_to_dictionary(self._cur, query)
+            for query in self.database.cursor.fetchall():
+                db_item = sql_to_dictionary(self.database.cursor, query)
                 items.append(Items(db_item))
             self._items = items
         return self._items
@@ -232,9 +232,9 @@ class Carts(Models, UserModelDecorator):
         if not self._contents:
             SQL = f"SELECT item_id FROM shopping WHERE cart_id = %s;" #does this return a tuple or single value?
             data = (self.user_id, )
-            self._cur.execute(SQL, data)
+            self.database.cursor.execute(SQL, data)
             items = []
-            for id in self._cur.fetchall():
+            for id in self.database.cursor.fetchall():
                 items.append(Items.get(id))
             self._contents = items
         return self._contents
@@ -243,22 +243,22 @@ class Carts(Models, UserModelDecorator):
     def remove(self, reservation):
         SQL = f"DELETE * FROM shopping WHERE cart_id = %s AND item_id = %s;" #does this return a tuple or single value?
         data = (self.user_id, reservation.item_id)
-        self._cur.execute(SQL, data)
+        self.database.cursor.execute(SQL, data)
         self._total -= reservation._charge
         SQL = f"UPDATE carts SET total = %s WHERE id = %s;"
         data = (self._total, self.user_id)
-        self._cur.execute(SQL, data)
-        self._conn.commit()
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
 
     def add(self, reservation):
         SQL = f"INSERT INTO shopping VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.user_id, reservation.item_id) #sensitive to tuple order
-        self._cur.execute(SQL, data)
+        self.database.cursor.execute(SQL, data)
         self._total += reservation._charge
         SQL = f"UPDATE carts SET total = %s WHERE id = %s;"
         data = (self._total, self.user_id)
-        self._cur.execute(SQL, data)
-        self._conn.commit()
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
 
     def refresh(self):
         self = Carts.get(self.user_id)
@@ -319,9 +319,9 @@ class Items(AddressModels):
         if not self._active_carts:
             SQL = f"SELECT cart_id FROM shopping WHERE item_id = %s;" #does this return a tuple or single value?
             data = (self.id, )
-            self._cur.execute(SQL, data)
+            self.database.cursor.execute(SQL, data)
             carts = []
-            for id in self._cur.fetchall():
+            for id in self.database.cursor.fetchall():
                 carts.append(Carts.get(id))
             self._active_carts = carts
         return self._active_carts
@@ -332,8 +332,8 @@ class Items(AddressModels):
     def lock(self, user):
         SQL = f"UPDATE items SET is_locked = %s AND last_locked = %s WHERE id = %s;" # Note: no quotes
         data = (True, user.id, self.id)
-        self._cur.execute(SQL, data)
-        self._conn.commit()
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
         self = Items.get(self.id)
 
     def unlock(self):
@@ -343,8 +343,8 @@ class Items(AddressModels):
                 AND is_routed = %s
                 WHERE id = %s;""" # Note: no quotes
         data = (False, 0, False, self.id)
-        self._cur.execute(SQL, data)
-        self._conn.commit()
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
         self = Items.get(self.id)
 
 class Details(Models, ItemModelDecorator):
@@ -565,8 +565,8 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
             reservation_keys['renter_id'],
             reservation_keys['item_id']]
         data = tuple(updates + keys)
-        cls._cur.execute(SQL, data)
-        cls._conn.commit()
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
 
     @classmethod
     def get(cls, reservation_keys):
@@ -581,8 +581,8 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
             reservation_keys['date_ended'],
             reservation_keys['renter_id'],
             reservation_keys['item_id'])
-        cls._cur.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls._cur, cls._cur.fetchone())
+        cls.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_obj)
 
     @classmethod
@@ -598,8 +598,8 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
             reservation_keys['date_ended'],
             reservation_keys['renter_id'],
             reservation_keys['item_id'])
-        cls._cur.execute(SQL, data)
-        cls._conn.commit()
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
 
 class Orders(ReservationModels):
     table_name = "orders"
@@ -632,8 +632,8 @@ class Orders(ReservationModels):
         if self.is_pickup_scheduled:
             SQL = f"SELECT pickup_date, dt_sched, renter_id FROM order_pickups WHERE order_id = %s;" # Note: no quotes
             data = (self.id, )
-            self._cur.execute(SQL, data)
-            db_obj = sql_to_dictionary(self._cur, self._cur.fetchone())
+            self.database.cursor.execute(SQL, data)
+            db_obj = sql_to_dictionary(self.database.cursor, self.database.cursor.fetchone())
             return Pickups.get(db_obj)
         else:
             return None
@@ -642,8 +642,8 @@ class Orders(ReservationModels):
         if self.is_dropoff_scheduled:
             SQL = f"SELECT dropoff_date, dt_sched, renter_id FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
             data = (self.id, )
-            self._cur.execute(SQL, data)
-            db_obj = sql_to_dictionary(self._cur, self._cur.fetchone())
+            self.database.cursor.execute(SQL, data)
+            db_obj = sql_to_dictionary(self.database.cursor, self.database.cursor.fetchone())
             return Dropoffs.get(db_obj)
         else:
             return None
@@ -694,8 +694,8 @@ class Logistics(AddressModels):
     def get(cls, logistics_keys):
         SQL = f"SELECT * FROM logistics WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (logistics_keys["dt_sched"], logistics_keys["renter_id"])
-        cls._cur.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls._cur, cls._cur.fetchone())
+        cls.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_obj)
 
 class Pickups(Models):
@@ -715,8 +715,8 @@ class Pickups(Models):
         if not self._order:
             SQL = f"SELECT order_id FROM order_pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
             data = (self.date_pickup, self._dt_sched, self._renter_id)
-            self._cur.execute(SQL, data)
-            db_obj = sql_to_dictionary(self._cur, self._cur.fetchone()) #NOTE is this just {"order_id": order_id}?
+            self.database.cursor.execute(SQL, data)
+            db_obj = sql_to_dictionary(self.database.cursor, self.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
             self._order = Orders.get(db_obj["order_id"])
         return self._order
 
@@ -737,8 +737,8 @@ class Dropoffs(Models):
         if not self._order:
             SQL = f"SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
             data = (self.date_dropoff, self._dt_sched, self._renter_id)
-            self._cur.execute(SQL, data)
-            db_obj = sql_to_dictionary(self._cur, self._cur.fetchone()) #NOTE is this just {"order_id": order_id}?
+            self.database.cursor.execute(SQL, data)
+            db_obj = sql_to_dictionary(self.database.cursor, self.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
             self._order = Orders.get(db_obj["order_id"])
         return self._order
 
@@ -770,8 +770,8 @@ class Testimonials(Models, UserModelDecorator):
     def get(cls, testimonial_keys):
         SQL = f"SELECT * FROM testimonials WHERE date_made = %s AND user_id = %s;" # Note: no quotes
         data = (testimonial_keys["date_made"], testimonial_keys["user_id"])
-        cls._cur.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls._cur, cls._cur.fetchone())
+        cls.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_obj)
 
     @classmethod
@@ -782,8 +782,8 @@ class Testimonials(Models, UserModelDecorator):
     def delete(cls, testimonial_keys):
         SQL = f"DELETE * FROM {cls.table_name} WHERE date_made = %s AND user_id = %s;" # Note: no quotes
         data = (testimonial_keys["date_made"], testimonial_keys["user_id"])
-        cls._cur.execute(SQL, data)
-        cls._conn.commit()
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
 
     def refresh(self):
         testimonial_keys = {
@@ -803,10 +803,10 @@ class Tags(Models):
     def items_by_tag(cls, tag_name):
         SQL = "SELECT * FROM tagging WHERE tag_name = %s;"
         data = (tag_name, )
-        self._cur.execute(SQL, data)
+        self.database.cursor.execute(SQL, data)
         items = []
-        for query in cls._cur.fetchall():
-            db_item_to_tag = sql_to_dictionary(cls._cur, query)
+        for query in cls.database.cursor.fetchall():
+            db_item_to_tag = sql_to_dictionary(cls.database.cursor, query)
             items.append(Items(db_item_to_tag["item_id"]))
         return items
 
@@ -814,8 +814,8 @@ class Tags(Models):
     def get(cls, tag_name):
         SQL = f"SELECT * FROM tags WHERE tag_name = %s;" # Note: no quotes
         data = (testimonial_keys["tag_name"])
-        cls._cur.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls._cur, cls._cur.fetchone())
+        cls.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_obj)
 
     @classmethod
@@ -826,8 +826,8 @@ class Tags(Models):
     def delete(cls, name):
         SQL = f"DELETE * FROM {cls.table_name} WHERE tag_name = %s;" # Note: no quotes
         data = (name, )
-        cls._cur.execute(SQL, data)
-        cls._conn.commit()
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
 
     def refresh(self):
         self = Tags.get(self.name)

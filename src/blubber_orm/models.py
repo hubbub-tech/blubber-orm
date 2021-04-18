@@ -330,7 +330,7 @@ class Items(AddressModels):
         return f"${self._price:,.2f}"
 
     def lock(self, user):
-        SQL = f"UPDATE items SET is_locked = %s AND last_locked = %s WHERE id = %s;" # Note: no quotes
+        SQL = f"UPDATE items SET is_locked = %s, last_locked = %s WHERE id = %s;" # Note: no quotes
         data = (True, user.id, self.id)
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
@@ -338,9 +338,9 @@ class Items(AddressModels):
 
     def unlock(self):
         SQL = f"""UPDATE items
-            SET is_locked = %s
-                AND last_locked = %s
-                AND is_routed = %s
+            SET is_locked = %s,
+                last_locked = %s,
+                is_routed = %s
                 WHERE id = %s;""" # Note: no quotes
         data = (False, 0, False, self.id)
         self.database.cursor.execute(SQL, data)
@@ -551,7 +551,7 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
     @classmethod
     def set(cls, reservation_keys, changes):
         targets = [f"{target} = %s" for target in changes.keys()]
-        targets_str = " AND ".join(targets)
+        targets_str = ", ".join(targets)
         SQL = f"""
             UPDATE reservations SET {targets_str}
                 WHERE date_started = %s

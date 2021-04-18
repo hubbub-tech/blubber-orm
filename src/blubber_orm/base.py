@@ -59,7 +59,7 @@ class Models(AbstractModels):
     @classmethod
     def set(cls, id, attributes):
         conditions = [f"{attributes} = %s" for attributes in attributes.keys()]
-        conditions_str = " AND ".join(conditions)
+        conditions_str = ", ".join(conditions)
         updates = [parameters for parameters in attributes.values()]
         SQL = f"UPDATE {cls.table_name} SET {conditions_str} WHERE id = %s;" # Note: no quotes
         data = tuple(updates + [id])

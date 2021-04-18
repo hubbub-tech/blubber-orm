@@ -57,11 +57,9 @@ class DatabaseConnection:
             #build exception for when URI cannot be found in environment
             database_uri = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"
             credentials = parse_uri(database_uri)
-            print("in the try")
         except AssertionError as not_postgres_error:
             #TODO: log error to file with traceback
             print(not_postgres_error)
-            print("in the exception")
         else:
             # establish connection
             try:
@@ -72,14 +70,12 @@ class DatabaseConnection:
                     host=credentials["host"],
                     port=credentials["port"]
                 )
-                print("successful connection")
             except Exception as connection_error:
                 #TODO: log error to file with traceback
                 print(connection_error)
             else:
                 #call the 'cursor' to make edits/db calls
                 cur = conn.cursor()
-                print("cursor")
         finally:
             return cur, conn
 

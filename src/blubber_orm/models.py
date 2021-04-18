@@ -2,7 +2,80 @@ import pytz
 from datetime import datetime, date, timedelta
 
 from .db import sql_to_dictionary
-from .base import UserModelDecorator, ItemModelDecorator, Models, AddressModels, ReservationModels
+from .base import Models
+
+class ItemModelDecorator:
+    _item = None
+
+    @property
+    def item(self):
+        model_class = type(self)
+        if "item_id" in model_class.__dict__.keys():
+            if self._item:
+                return self._item
+            return Items.get(self.item_id)
+        else:
+            raise Exception("This class cannot inherit from the item decorator. No item_id attribute.")
+
+class UserModelDecorator:
+    _user = None
+
+    @property
+    def user(self):
+        model_class = type(self)
+        if "user_id" in model_class.__dict__.keys():
+            if self._user:
+                return self._user
+            return Users.get(self.user_id)
+        else:
+            raise Exception("This class cannot inherit from the user decorator. No user_id attribute.")
+
+class AddressModels(Models):
+    _address = None
+    def __init__(self, db_data):
+        super(AddressModels, self).__init__()
+        self._address_num = db_data["address_num"]
+        self._address_street = db_data["address_street"]
+        self._address_apt = db_data["address_apt"]
+        self._address_zip = db_data["address_zip"]
+
+    @property
+    def address(self):
+        if not self._address:
+            address_keys = {
+                "num": self._address_num,
+                "street": self._address_street,
+                "apt": self._address_apt,
+                "zip": self._address_zip}
+            self._address = Addresses.get(address_keys)
+        return self._address
+
+class ReservationModels(Models, ItemModelDecorator):
+    _reservation = None
+
+    def __init__(self, db_data):
+        super(ReservationModels, self).__init__()
+        self._res_date_started = db_data["res_date_start"]
+        self._res_date_ended = db_data["res_date_end"]
+        self._res_renter_id = db_data["renter_id"]
+        self._res_item_id = db_data["item_id"]
+
+    @property
+    def reservation(self):
+        if not self._reservation:
+            reservation_keys = {
+                "date_started": self._res_date_started,
+                "date_ended": self._res_date_ended,
+                "renter_id": self._res_renter_id,
+                "item_id": self._res_item_id}
+            self._reservation = Reservations.get(reservation_keys)
+        return self._reservation
+
+    def renter(self):
+        return Users.get(self._res_renter_id) #the renter id is stored then searched in users
+
+    def price(self):
+        return f"${self.reservation.charge:,.2f}"
 
 class Addresses(Models):
     table_name = "addresses"
@@ -17,7 +90,6 @@ class Addresses(Models):
         self.city = db_data["city"]
         self.state = db_data["state"]
         self.zip_code = db_data["zip"]
-
 
     @classmethod
     def get(cls, address_keys):
@@ -616,7 +688,6 @@ class Orders(ReservationModels):
         self.is_pickup_scheduled = db_data["is_pick_sched"]
         self._lister_id = db_data["lister_id"]
 
-
     @property
     def extensions(self):
         if self.reservation.is_extended:
@@ -701,14 +772,22 @@ class Logistics(AddressModels):
 class Pickups(Models):
     table_name = "pickups"
     _order = None
+    _logistics = None
 
     def __init__(self, db_data):
         super(Pickups, self).__init__()
         self.date_pickup = db_data["pickup_date"]
         self._dt_sched = db_data["dt_sched"]
         self._renter_id = db_data["renter_id"]
-        self.logistics = Logistics.get(db_data)
 
+    @property
+    def logistics(self):
+        if not self._logistics:
+            keys = {
+                "dt_sched": self._dt_sched,
+                "renter_id": self._renter_id}
+            self._logistics = Logistics.get(keys)
+        return self._logistics
 
     @property
     def order(self):
@@ -723,14 +802,22 @@ class Pickups(Models):
 class Dropoffs(Models):
     table_name = "dropoffs"
     _order = None
+    _logistics = None
 
     def __init__(self, db_data):
         super(Dropoffs, self).__init__()
         self.date_dropoff = db_data["dropoff_date"]
         self._dt_sched = db_data["dt_sched"]
         self._renter_id = db_data["renter_id"]
-        self.logistics = Logistics.get(db_data)
 
+    @property
+    def logistics(self):
+        if not self._logistics:
+            keys = {
+                "dt_sched": self._dt_sched,
+                "renter_id": self._renter_id}
+            self._logistics = Logistics.get(keys)
+        return self._logistics
 
     @property
     def order(self):

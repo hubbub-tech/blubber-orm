@@ -4,7 +4,7 @@ from .models import (
     Orders, Extensions, Pickups, Dropoffs, Tags, Reviews, Testimonials
 )
 from .queries import *
-
+from .dev import generate_identity, generate_address, generate_item
 from .db import parse_uri, DatabaseConnection
 
 connection_uri = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"

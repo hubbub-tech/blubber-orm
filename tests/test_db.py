@@ -41,5 +41,11 @@ class TestDatabaseConnection(unittest.TestCase):
         #maybe also find a way to see if the database connection is actually closed
         pass
 
+    def test_db_connection():
+        #connection_uri = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"
+        #db_instance = DatabaseConnection.get_instance()
+        #print("Connection", db_instance)
+        pass
+
 if __name__ == '__main__':
     unittest.main()

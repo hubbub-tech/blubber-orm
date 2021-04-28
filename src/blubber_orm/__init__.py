@@ -1,14 +1,20 @@
 import os
-from .models import (
-    Users, Profiles, Carts, Addresses, Items, Details, Calendars, Reservations,
-    Orders, Extensions, Pickups, Dropoffs, Tags, Reviews, Testimonials
-)
-from .queries import *
-from .dev import generate_identity, generate_address, generate_item
-from .db import parse_uri, DatabaseConnection
 
-connection_uri = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"
-#print(connection_uri)
+from .db import DatabaseConnection
+from .db import parse_uri
 
-db_instance = DatabaseConnection.get_instance()
-print(db_instance)
+from .models import Addresses
+from .models import Users
+from .models import Profiles
+from .models import Carts
+from .models import Items
+from .models import Details
+from .models import Calendars
+from .models import Reservations
+from .models import Orders
+from .models import Extensions
+from .models import Pickups
+from .models import Dropoffs
+from .models import Tags
+from .models import Reviews
+from .models import Testimonials

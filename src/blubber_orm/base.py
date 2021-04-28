@@ -2,11 +2,22 @@ from abc import ABC, abstractmethod
 from .db import DatabaseConnection, sql_to_dictionary
 
 class AbstractModels(ABC):
-    table_name = None
-    database = DatabaseConnection.get_instance()
+    """
+    AbstractModels defines the basic functions that each of the Models should
+    come with: CREATE (insert), READ (get, filter), UPDATE (set), and DESTROY
+    (delete).
 
-    def __init__(self):
-        self.table_columns = self._get_columns()
+    Some other default attributes are `table_name` and `database`. These do
+    not correspond to columns from the Hubbub database, but rather are functional.
+    these attributes are different between child classes but NOT between
+    instances of that class. They are meant to power psycopg2 queries.
+
+    """
+
+    table_name = None
+    table_columns = None
+    table_primaries = None
+    database = DatabaseConnection.get_instance()
 
     @classmethod
     @abstractmethod
@@ -28,8 +39,9 @@ class AbstractModels(ABC):
     def filter(cls, filters):
         pass
 
+    @classmethod
     @abstractmethod
-    def _get_columns(self):
+    def _get_columns(cls):
         pass
 
     @abstractmethod
@@ -41,12 +53,18 @@ class Models(AbstractModels):
     @classmethod
     def insert(cls, attributes):
         attributes_str = ", ".join(attributes.keys())
-        values = ["%s" for attribute in attributes.values()]
-        values_str = ", ".join(values)
-        SQL = f"INSERT INTO {cls.table_name} ({attributes_str}) VALUES ({values_str});"
+        placeholders = ["%s" for attribute in attributes.values()]
+        placeholders_str = ", ".join(placeholders)
+        SQL = f"INSERT INTO {cls.table_name} ({attributes_str}) VALUES ({placeholders_str}) RETURNING {primaries_str};"
         data = tuple(attributes.values())
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()
+
+        primary_key = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        if len(primary_key.keys()) == 1:
+            primary_key, = primary_key.values()
+        new_entry = cls.get(primary_key)
+        return new_entry
 
     @classmethod
     def get(cls, id):
@@ -87,13 +105,14 @@ class Models(AbstractModels):
         cls.database.connection.commit()
 
     #returns the element that was not in the table columns so you can fix
+    returns the element that was not in the table columns so you can fix
     @classmethod
-    def is_indexed(cls, query_column_names):
+    def check_columns(cls, query_column_names):
         _query_column_names = query_column_names
         _comparison_column_name = _query_column_names.pop(0)
-        if set([_comparison_column_name]).issubset(cls.table_columns):
+        if set([_comparison_column_name]).issubset(cls._get_columns()):
             if len(_query_column_names) > 0:
-                return cls.is_indexed(_query_column_names)
+                return cls.check_columns(_query_column_names)
             else:
                 return True
         else:
@@ -101,10 +120,13 @@ class Models(AbstractModels):
             print("This element was not in column names: ", _comparison_column_name)
             return False
 
-    def _get_columns(self):
-        self.database.cursor.execute(f"SELECT * FROM {self.table_name} LIMIT 0")
-        columns = [attribute.name for attribute in self.database.cursor.description]
-        return columns
+    @classmethod
+    def _get_columns(cls):
+        if not cls.table_columns:
+            cls.database.cursor.execute(f"SELECT * FROM {cls.table_name} LIMIT 0")
+            columns = [attribute.name for attribute in cls.database.cursor.description]
+            cls.table_columns = columns
+        return cls.table_columns
 
     def refresh(self):
         cls = type(self)

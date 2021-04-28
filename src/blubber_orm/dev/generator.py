@@ -45,7 +45,7 @@ def generate_identity():
             "address_zip": address["zip"]
         },
         "profile": {
-            "birthday": date(1998, 12, 31)
+            "birthday": date(1998, 12, 31),
             "phone": phone,
             "bio": bio,
             "has_pic": False

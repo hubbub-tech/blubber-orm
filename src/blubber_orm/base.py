@@ -55,6 +55,7 @@ class Models(AbstractModels):
         attributes_str = ", ".join(attributes.keys())
         placeholders = ["%s" for attribute in attributes.values()]
         placeholders_str = ", ".join(placeholders)
+        primaries_str = ", ".join(cls.table_primaries)
         SQL = f"INSERT INTO {cls.table_name} ({attributes_str}) VALUES ({placeholders_str}) RETURNING {primaries_str};"
         data = tuple(attributes.values())
         cls.database.cursor.execute(SQL, data)
@@ -105,7 +106,6 @@ class Models(AbstractModels):
         cls.database.connection.commit()
 
     #returns the element that was not in the table columns so you can fix
-    returns the element that was not in the table columns so you can fix
     @classmethod
     def check_columns(cls, query_column_names):
         _query_column_names = query_column_names

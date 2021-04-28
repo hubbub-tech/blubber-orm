@@ -33,7 +33,6 @@ class UserModelDecorator:
 class AddressModels(Models):
     _address = None
     def __init__(self, db_data):
-        super(AddressModels, self).__init__()
         self._address_num = db_data["address_num"]
         self._address_street = db_data["address_street"]
         self._address_apt = db_data["address_apt"]
@@ -54,11 +53,13 @@ class ReservationModels(Models, ItemModelDecorator):
     _reservation = None
 
     def __init__(self, db_data):
-        super(ReservationModels, self).__init__()
         self._res_date_started = db_data["res_date_start"]
         self._res_date_ended = db_data["res_date_end"]
         self._res_renter_id = db_data["renter_id"]
         self._res_item_id = db_data["item_id"]
+
+        #for ItemModelDecorator
+        self.item_id = self._res_item_id
 
     @property
     def reservation(self):
@@ -83,7 +84,6 @@ class Addresses(Models):
     _items = None
 
     def __init__(self, db_data):
-        super(Addresses, self).__init__()
         self.num = db_data["num"]
         self.street = db_data["street"]
         self.apt = db_data["apt"]
@@ -106,8 +106,24 @@ class Addresses(Models):
         return cls(db_obj) # query here
 
     @classmethod
-    def set(cls):
-        pass
+    def set(cls, address_keys, changes):
+        targets = [f"{target} = %s" for target in changes.keys()]
+        targets_str = ", ".join(targets)
+        SQL = f"""
+            UPDATE addresses SET {targets_str}
+                WHERE num = %s
+                AND street = %s
+                AND apt = %s
+                AND zip = %s;""" # Note: no quotes
+        updates = [value for value in changes.values()]
+        keys = [
+            address_keys['num'],
+            address_keys['street'],
+            address_keys['apt'],
+            address_keys['zip']]
+        data = tuple(updates + keys)
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
 
     @classmethod
     def delete(cls, address_keys):
@@ -220,7 +236,6 @@ class Users(AddressModels):
         self.dt_last_active = db_data["dt_last_active"]
         self.is_blocked = db_data["is_blocked"]
 
-
     def phone(self):
         return self.profile.phone
 
@@ -272,7 +287,6 @@ class Profiles(Models, UserModelDecorator):
     table_name = "profiles"
 
     def __init__(self, db_data):
-        super(Profiles, self).__init__()
         self.user_id = db_data["id"]
         self.phone = db_data["phone"]
         self.has_pic = db_data["has_pic"]
@@ -287,7 +301,6 @@ class Carts(Models, UserModelDecorator):
     _contents = None
 
     def __init__(self, db_data):
-        super(Carts, self).__init__()
         #attributes
         self.user_id = db_data["id"]
         self._total = db_data["total"]
@@ -431,7 +444,6 @@ class Details(Models, ItemModelDecorator):
         self._weight = db_data["weight"] #int
         self._volume = db_data["volume"] #int
 
-
     @property
     def condition(self):
         condition_key = {3: 'Very Good', 2: 'Good', 1: 'Acceptible'}
@@ -474,7 +486,6 @@ class Calendars(Models, ItemModelDecorator):
     _reservations = None
 
     def __init__(self, db_data):
-        super(Calendars, self).__init__()
         self.item_id = db_data["id"]
         self.date_started = db_data["date_started"]
         self.date_ended = db_data["date_ended"]
@@ -561,7 +572,6 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
     table_name = "reservations"
 
     def __init__(self, db_data):
-        super(Reservations, self).__init__()
         #attributes
         self.date_started = db_data["date_started"]
         self.date_ended = db_data["date_ended"]
@@ -775,7 +785,6 @@ class Pickups(Models):
     _logistics = None
 
     def __init__(self, db_data):
-        super(Pickups, self).__init__()
         self.date_pickup = db_data["pickup_date"]
         self._dt_sched = db_data["dt_sched"]
         self._renter_id = db_data["renter_id"]
@@ -805,7 +814,6 @@ class Dropoffs(Models):
     _logistics = None
 
     def __init__(self, db_data):
-        super(Dropoffs, self).__init__()
         self.date_dropoff = db_data["dropoff_date"]
         self._dt_sched = db_data["dt_sched"]
         self._renter_id = db_data["renter_id"]
@@ -833,7 +841,6 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
     table_name = "reviews"
 
     def __init__(self, db_data):
-        super(Reviews, self).__init__()
         #attributes
         self.id = db_data["id"]
         self.body = db_data["body"]
@@ -847,7 +854,6 @@ class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"
 
     def __init__(self, db_data):
-        super(Testimonials, self).__init__()
         self.date_made = db_data["date_made"]
         self.description = db_data["description"]
         self.user_id = db_data["user_id"]
@@ -882,7 +888,6 @@ class Tags(Models):
     table_name = "tags"
 
     def __init__(self, db_data):
-        super(Tags, self).__init__()
         self.name = db_data["tag_name"]
 
 

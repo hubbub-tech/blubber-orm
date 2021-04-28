@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, date, timedelta
 
 def date_range_generator(min=date.today(), max=date.max):

@@ -1,6 +1,8 @@
 import random
 import pytz
 from datetime import datetime, date
+from werkzeug.security import generate_password_hash
+
 from .tools import date_range_generator
 
 firstnames = ["Andy", "Bob", "Cornelious", "Dee", "Eugene", "Flan", "Gary", "Hammy", "Ignatious",
@@ -27,19 +29,32 @@ def generate_identity():
     payment = f"@{firstname[0]}-{lastname}-1"
     phone = f"732{random.randint(100, 999)}{random.randint(100, 999)}0"
     bio = "I love Hubbub!"
+    address = generate_address()
     return {
-        "firstname": firstname,
-        "lastname": lastname,
-        "name": name,
-        "email": email,
-        "dt_joined": datetime.now(tz=pytz.UTC),
-        "dt_last_active": datetime.now(tz=pytz.UTC),
-        "is_blocked": False,
-        "payment": payment,
-        "phone": phone,
-        "bio": bio,
-        "has_pic": False,
-        "total":0}
+        "user": {
+            "name": name,
+            "email": email,
+            "dt_joined": datetime.now(tz=pytz.UTC),
+            "dt_last_active": datetime.now(tz=pytz.UTC),
+            "is_blocked": False,
+            "payment": payment,
+            "password": generate_password_hash("password"),
+            "address_num": address["num"],
+            "address_street": address["street"],
+            "address_apt": address["apt"],
+            "address_zip": address["zip"]
+        },
+        "profile": {
+            "birthday": date(1998, 12, 31)
+            "phone": phone,
+            "bio": bio,
+            "has_pic": False
+        },
+        "cart": {
+            "total":0
+        },
+        "address": address
+        }
 
 def generate_address():
     num = random.randint(1, 99)
@@ -60,20 +75,32 @@ def generate_address():
 def generate_item():
     item_name = random.choice(items)
     start_date, end_date = date_range_generator(max=date(2025, 12, 31))
-    item_data = {
-        "lister_id" : None,
-        "name" : item_name,
-        "price" : random.randint(100, 400) + .99,
-        "is_available": True,
-        "is_featured": False,
-        "dt_created": datetime.now(tz=pytz.UTC),
-        "is_locked": False,
-        "last_locked": None,
-        "is_routed": False,
-        "date_started" : start_date,
-        "date_ended" : end_date,
-        "description" : "This is just for lols.",
-        "condition" : random.randint(1, 3),
-        "volume" : random.randint(1, 3),
-        "weight" : random.randint(1, 3)}
-    return item_data
+    address = generate_address()
+    return {
+        "item": {
+            "lister_id" : 1,
+            "name" : item_name,
+            "price" : random.randint(100, 400) + .99,
+            "is_available": True,
+            "is_featured": False,
+            "dt_created": datetime.now(tz=pytz.UTC),
+            "is_locked": False,
+            "last_locked": None,
+            "is_routed": False,
+            "address_num": address["num"],
+            "address_street": address["street"],
+            "address_apt": address["apt"],
+            "address_zip": address["zip"]
+        },
+        "details": {
+            "description" : "This is just for lols.",
+            "condition" : random.randint(1, 3),
+            "volume" : random.randint(1, 3),
+            "weight" : random.randint(1, 3)
+        },
+        "calendar": {
+            "date_started" : start_date,
+            "date_ended" : end_date
+        },
+        "address": address
+    }

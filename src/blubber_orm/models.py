@@ -32,6 +32,7 @@ class UserModelDecorator:
 
 class AddressModels(Models):
     _address = None
+
     def __init__(self, db_data):
         self._address_num = db_data["address_num"]
         self._address_street = db_data["address_street"]
@@ -58,9 +59,6 @@ class ReservationModels(Models, ItemModelDecorator):
         self._res_renter_id = db_data["renter_id"]
         self._res_item_id = db_data["item_id"]
 
-        #for ItemModelDecorator
-        self.item_id = self._res_item_id
-
     @property
     def reservation(self):
         if not self._reservation:
@@ -80,6 +78,7 @@ class ReservationModels(Models, ItemModelDecorator):
 
 class Addresses(Models):
     table_name = "addresses"
+    table_primaries = ["num", "street", "apt", "zip"]
     _occupants = None
     _items = None
 
@@ -216,6 +215,7 @@ class Addresses(Models):
 
 class Users(AddressModels):
     table_name = "users"
+    table_primaries = ["id"]
     _listings = None
     _reviews = None
     _cart = None
@@ -285,6 +285,7 @@ class Users(AddressModels):
 
 class Profiles(Models, UserModelDecorator):
     table_name = "profiles"
+    table_primaries = ["id"]
 
     def __init__(self, db_data):
         self.user_id = db_data["id"]
@@ -298,6 +299,7 @@ class Profiles(Models, UserModelDecorator):
 
 class Carts(Models, UserModelDecorator):
     table_name = "carts"
+    table_primaries = ["id"]
     _contents = None
 
     def __init__(self, db_data):
@@ -350,6 +352,8 @@ class Carts(Models, UserModelDecorator):
 
 class Items(AddressModels):
     table_name = "items"
+    table_primaries = ["id"]
+
     _lister = None
     _details = None
     _calendar = None
@@ -362,9 +366,9 @@ class Items(AddressModels):
         self.id = db_data["id"]
         self.name = db_data["name"]
         self._price = db_data["price"]
-        self._price_per_day = self.price / 10.00 #TODO
-        self._price_per_week = self.price / 5.00 #TODO
-        self._price_per_month = self.price / 2.00 #TODO
+        self._price_per_day = self._price / 10.00 #TODO
+        self._price_per_week = self._price / 5.00 #TODO
+        self._price_per_month = self._price / 2.00 #TODO
         self.is_available = db_data["is_available"]
         self.is_featured = db_data["is_featured"]
         self.dt_created = db_data["dt_created"]
@@ -434,9 +438,9 @@ class Items(AddressModels):
 
 class Details(Models, ItemModelDecorator):
     table_name = "details"
+    table_primaries = ["id"]
 
     def __init__(self, db_data):
-        super(Details, self).__init__()
         #attributes
         self.item_id = db_data["id"]
         self.description = db_data["description"]
@@ -483,6 +487,7 @@ class Details(Models, ItemModelDecorator):
 
 class Calendars(Models, ItemModelDecorator):
     table_name = "calendars"
+    table_primaries = ["id"]
     _reservations = None
 
     def __init__(self, db_data):
@@ -570,6 +575,7 @@ class Calendars(Models, ItemModelDecorator):
 
 class Reservations(Models, UserModelDecorator, ItemModelDecorator):
     table_name = "reservations"
+    table_primaries = ["date_started", "date_ended", "item_id", "renter_id"]
 
     def __init__(self, db_data):
         #attributes
@@ -685,6 +691,7 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
 
 class Orders(ReservationModels):
     table_name = "orders"
+    table_primaries = ["id"]
     _extensions = None
 
     def __init__(self, db_data):
@@ -742,6 +749,7 @@ class Orders(ReservationModels):
 
 class Extensions(ReservationModels):
     table_name = "extensions"
+    table_primaries = ["ext_charge", "ext_date_end", "renter_id"]
 
     def __init__(self, db_data):
         #get reservation attributes, foreign keys
@@ -756,6 +764,7 @@ class Extensions(ReservationModels):
 
 class Logistics(AddressModels):
     table_name = "logistics"
+    table_primaries = ["dt_sched", "renter_id"]
 
     def __init__(self, db_data):
         #get address attributes, foreign keys
@@ -781,6 +790,7 @@ class Logistics(AddressModels):
 
 class Pickups(Models):
     table_name = "pickups"
+    table_primaries = ["pickup_date", "dt_sched", "renter_id"]
     _order = None
     _logistics = None
 
@@ -810,6 +820,7 @@ class Pickups(Models):
 
 class Dropoffs(Models):
     table_name = "dropoffs"
+    table_primaries = ["dropoff_date", "dt_sched", "renter_id"]
     _order = None
     _logistics = None
 
@@ -839,6 +850,7 @@ class Dropoffs(Models):
 
 class Reviews(Models, UserModelDecorator, ItemModelDecorator):
     table_name = "reviews"
+    table_primaries = ["id"]
 
     def __init__(self, db_data):
         #attributes
@@ -852,6 +864,7 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
 
 class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"
+    table_primaries = ["date_made", "user_id"]
 
     def __init__(self, db_data):
         self.date_made = db_data["date_made"]
@@ -886,6 +899,7 @@ class Testimonials(Models, UserModelDecorator):
 
 class Tags(Models):
     table_name = "tags"
+    table_primaries = ["tag_name"]
 
     def __init__(self, db_data):
         self.name = db_data["tag_name"]

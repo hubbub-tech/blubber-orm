@@ -8,5 +8,5 @@ setup(name='blubber_orm',
       author_email='abalogun316@gmail.com',
       license='MIT',
       packages=find_packages(),
-      install_requires=['psycopg2', 'datetime', 'uritools', 'pytz']
+      install_requires=['psycopg2', 'datetime', 'uritools', 'pytz', 'Werkzeug']
       )

@@ -12,6 +12,16 @@ class AbstractModels(ABC):
     these attributes are different between child classes but NOT between
     instances of that class. They are meant to power psycopg2 queries.
 
+    table_name => must be defined in every child class to tell what table the
+    model reflects. This is a class-level attribute not changed between instances.
+
+    tables_columns => defined on the first call of _get_columns and is a class-level
+    attribute and not changed between instances.
+
+    table_primaries => defines the primary key(s) of the modeled table. Class-level
+    attribute.
+
+    database => stored database connection and cursor for SQL scripts.
     """
 
     table_name = None
@@ -22,33 +32,67 @@ class AbstractModels(ABC):
     @classmethod
     @abstractmethod
     def insert(cls, attributes):
-        pass
+        """
+        Insert a new row of data into the table connected to the child model.
+        This daata is accepted as a dictionary with the column name as dictionary
+        key and the value in the dictionary value.
+
+        This function is defined in Models base class and inherited across models.py.
+        There shouldn't be any reason to add/remove functionality from the Models
+        definition.
+        """
 
     @classmethod
     @abstractmethod
     def get(cls, id):
-        pass
+        """
+        Get a row of data from the table connected to the child model by the
+        primary key(s). The default is to take one primary key called `id`.
+        When a table has multiple primary keys or a primary key not named `id`,
+        this function should be redefined to accept a dictionary of keys.
+        """
 
     @classmethod
     @abstractmethod
     def set(cls, id, attributes):
-        pass
+        """
+        Edit data in a particular row by passing its primary key(s) and the changes
+        in a dictionary. If the item has multiple primary keys, again, redefine
+        the function to take a dictionary of keys instead.
+        """
 
     @classmethod
     @abstractmethod
     def filter(cls, filters):
-        pass
+        """
+        Pass the filter(s) in a dictionary where the keys are the columns on which
+        to filter and the values are the requirements for those columns. Should
+        not be redefined after inheriting Models.
+        """
 
     @classmethod
     @abstractmethod
     def _get_columns(cls):
-        pass
+        """
+        An internal function which calls the columns for the table linked to the
+        model.
+        """
 
     @abstractmethod
     def refresh(self):
-        pass
+        """
+        After an object has been updates, refresh allows you to quickly refresh
+        the instance with the updates.
+        """
 
 class Models(AbstractModels):
+    """
+    All Models of Hubbub database tables should inherit this Models base class.
+
+    NOTE: if you try to define this class, IT WILL NOT WORK. It must be inherited,
+    with the child class providing all of the specifics which connect the Model to
+    the database table.
+    """
 
     @classmethod
     def insert(cls, attributes):
@@ -108,6 +152,13 @@ class Models(AbstractModels):
     #returns the element that was not in the table columns so you can fix
     @classmethod
     def check_columns(cls, query_column_names):
+        """
+        A controlled check to see if the list of queried columns (passed in), is
+        actually a subset of the columns defined in the table.
+
+        If not, then return False and print the name of the first entry to fail
+        the check.
+        """
         _query_column_names = query_column_names
         _comparison_column_name = _query_column_names.pop(0)
         if set([_comparison_column_name]).issubset(cls._get_columns()):
@@ -122,7 +173,7 @@ class Models(AbstractModels):
 
     @classmethod
     def _get_columns(cls):
-        if not cls.table_columns:
+        if cls.table_columns is None:
             cls.database.cursor.execute(f"SELECT * FROM {cls.table_name} LIMIT 0")
             columns = [attribute.name for attribute in cls.database.cursor.description]
             cls.table_columns = columns

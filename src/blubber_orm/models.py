@@ -5,80 +5,91 @@ from .db import sql_to_dictionary
 from .base import Models
 
 class ItemModelDecorator:
+    """
+    A decorator on Models which provides access to the item linked by the foreign
+    key `item_id`.
+    """
+
     _item = None
 
     @property
     def item(self):
         model_class = type(self)
         if "item_id" in model_class.__dict__.keys():
-            if self._item:
-                return self._item
-            return Items.get(self.item_id)
+            if self._item is None:
+                self._item = Items.get(self.item_id)
+            return self._item
         else:
             raise Exception("This class cannot inherit from the item decorator. No item_id attribute.")
 
 class UserModelDecorator:
+    """
+    A decorator on Models which provides access to the user linked by the foreign
+    key `user_id`.
+    """
+
     _user = None
 
     @property
     def user(self):
         model_class = type(self)
         if "user_id" in model_class.__dict__.keys():
-            if self._user:
-                return self._user
-            return Users.get(self.user_id)
+            if self._user is None:
+                self._user = Users.get(self.user_id)
+            return self._user
         else:
             raise Exception("This class cannot inherit from the user decorator. No user_id attribute.")
 
-class AddressModels(Models):
-    _address = None
+class AddressModelDecorator:
+    """
+    A decorator on Models which provides access to the user linked by the foreign
+    keys for `addresses`.
+    """
 
-    def __init__(self, db_data):
-        self._address_num = db_data["address_num"]
-        self._address_street = db_data["address_street"]
-        self._address_apt = db_data["address_apt"]
-        self._address_zip = db_data["address_zip"]
+    _address = None
 
     @property
     def address(self):
-        if not self._address:
-            address_keys = {
-                "num": self._address_num,
-                "street": self._address_street,
-                "apt": self._address_apt,
-                "zip": self._address_zip}
-            self._address = Addresses.get(address_keys)
-        return self._address
+        model_class = type(self)
+        if "_address_num" in model_class.__dict__.keys(): #in reality it needs the other address keys too
+            if self._address is None:
+                address_keys = {
+                    "num": self._address_num,
+                    "street": self._address_street,
+                    "apt": self._address_apt,
+                    "zip": self._address_zip}
+                self._address = Addresses.get(address_keys)
+            return self._address
+        else:
+            raise Exception("This class cannot inherit from the address decorator. No address keys provided.")
 
-class ReservationModels(Models, ItemModelDecorator):
+class ReservationModelDecorator:
+    """
+    A decorator on Models which provides access to the user linked by the foreign
+    keys for `reservations`.
+    """
+
     _reservation = None
-
-    def __init__(self, db_data):
-        self._res_date_started = db_data["res_date_start"]
-        self._res_date_ended = db_data["res_date_end"]
-        self._res_renter_id = db_data["renter_id"]
-        self._res_item_id = db_data["item_id"]
 
     @property
     def reservation(self):
-        if not self._reservation:
-            reservation_keys = {
-                "date_started": self._res_date_started,
-                "date_ended": self._res_date_ended,
-                "renter_id": self._res_renter_id,
-                "item_id": self._res_item_id}
-            self._reservation = Reservations.get(reservation_keys)
-        return self._reservation
-
-    def renter(self):
-        return Users.get(self._res_renter_id) #the renter id is stored then searched in users
-
-    def price(self):
-        return f"${self.reservation.charge:,.2f}"
+        model_class = type(self)
+        if "_res_date_started" in model_class.__dict__.keys(): #in reality it needs the other res keys too
+            if self._reservation is None:
+                reservation_keys = {
+                    "date_started": self._res_date_started,
+                    "date_ended": self._res_date_ended,
+                    "renter_id": self._res_renter_id,
+                    "item_id": self._res_item_id}
+                self._reservation = Reservations.get(reservation_keys)
+            return self._reservation
+        else:
+            raise Exception("This class cannot inherit from the reservation decorator. No res keys provided.")
 
 class Addresses(Models):
     table_name = "addresses"
     table_primaries = ["num", "street", "apt", "zip"]
+
     _occupants = None
     _items = None
 
@@ -101,8 +112,8 @@ class Addresses(Models):
             address_keys['apt'],
             address_keys['zip'])
         cls.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
-        return cls(db_obj) # query here
+        db_address = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        return cls(db_address) # query here
 
     @classmethod
     def set(cls, address_keys, changes):
@@ -213,9 +224,10 @@ class Addresses(Models):
             "zip": self.zip_code}
         self = Addresses.get(address_keys)
 
-class Users(AddressModels):
+class Users(Models, AddressModelDecorator):
     table_name = "users"
     table_primaries = ["id"]
+
     _listings = None
     _reviews = None
     _cart = None
@@ -224,8 +236,6 @@ class Users(AddressModels):
     _reservations = None
 
     def __init__(self, db_data):
-        #Users inherits address creation from AddressModels
-        super(Users, self).__init__(db_data)
         #attributes
         self.id = db_data["id"] #primary key
         self._name = db_data["name"]
@@ -235,19 +245,24 @@ class Users(AddressModels):
         self.dt_joined = db_data["dt_joined"]
         self.dt_last_active = db_data["dt_last_active"]
         self.is_blocked = db_data["is_blocked"]
+        #address
+        self._address_num = db_data["address_num"]
+        self._address_street = db_data["address_street"]
+        self._address_apt = db_data["address_apt"]
+        self._address_zip = db_data["address_zip"]
 
     def phone(self):
         return self.profile.phone
 
     @property
     def cart(self):
-        if not self._cart:
+        if self._cart is None:
             self._cart = Carts.get(self.id)
         return self._cart
 
     @property
     def profile(self):
-        if not self._profile:
+        if self._profile is None:
             self._profile = Profiles.get(self.id)
         return self._profile
 
@@ -257,28 +272,28 @@ class Users(AddressModels):
 
     @property
     def listings(self):
-        if not self._listings:
+        if self._listings is None:
             credentials = {"lister_id": self.id}
             self._listings = Items.filter(credentials)
         return self._listings
 
     @property
     def reviews(self):
-        if not self._reviews:
+        if self._reviews is None:
             credentials = {"author_id": self.id}
             self._reviews = Reviews.filter(credentials)
         return self._reviews
 
     @property
     def testimonials(self):
-        if not self._testimonials:
+        if self._testimonials is None:
             credentials = {"user_id": self.id}
             self._testimonials = Testimonials.filter(credentials)
         return self._testimonials
 
     @property
     def reservations(self):
-        if not self._reservations:
+        if self._reservations is None:
             credentials = {"renter_id": self.id}
             self._reservations = Reservations.filter(credentials)
         return self._reservations
@@ -293,13 +308,13 @@ class Profiles(Models, UserModelDecorator):
         self.has_pic = db_data["has_pic"]
         self.bio = db_data["bio"]
 
-
     def refresh(self):
         self = Profiles.get(self.user_id)
 
 class Carts(Models, UserModelDecorator):
     table_name = "carts"
     table_primaries = ["id"]
+
     _contents = None
 
     def __init__(self, db_data):
@@ -316,7 +331,7 @@ class Carts(Models, UserModelDecorator):
 
     @property
     def contents(self):
-        if not self._contents:
+        if self._contents is None:
             SQL = f"SELECT item_id FROM shopping WHERE cart_id = %s;" #does this return a tuple or single value?
             data = (self.user_id, )
             self.database.cursor.execute(SQL, data)
@@ -350,7 +365,7 @@ class Carts(Models, UserModelDecorator):
     def refresh(self):
         self = Carts.get(self.user_id)
 
-class Items(AddressModels):
+class Items(Models, AddressModelDecorator):
     table_name = "items"
     table_primaries = ["id"]
 
@@ -360,8 +375,6 @@ class Items(AddressModels):
     _active_carts = None
 
     def __init__(self, db_data):
-        #Users inherits address creation from AddressModels
-        super(Items, self).__init__(db_data)
         #attributes
         self.id = db_data["id"]
         self.name = db_data["name"]
@@ -376,36 +389,40 @@ class Items(AddressModels):
         self.is_routed = db_data["is_routed"]
         self.last_locked = db_data["last_locked"]
         self._lister_id = db_data["lister_id"]
-
+        #address
+        self._address_num = db_data["address_num"]
+        self._address_street = db_data["address_street"]
+        self._address_apt = db_data["address_apt"]
+        self._address_zip = db_data["address_zip"]
 
     @property
     def details(self):
-        if not self._details:
+        if self._details is None:
             self._details = Details.get(self.id)
         return self._details
 
     @property
     def calendar(self):
-        if not self._calendar:
+        if self._calendar is None:
             self._calendar = Calendars.get(self.id)
         return self._calendar
 
     @property
     def lister(self):
-        if not self._lister:
+        if self._lister is None:
             self._lister = Users.get(self._lister_id)
         return self._lister
 
     @property
     def reviews(self):
-        if not self._reviews:
+        if self._reviews is None:
             credentials = {"item_id": self.id}
             self._reviews = Reviews.filter(credentials)
         return self._reviews
 
     @property
     def active_carts(self):
-        if not self._active_carts:
+        if self._active_carts is None:
             SQL = f"SELECT cart_id FROM shopping WHERE item_id = %s;" #does this return a tuple or single value?
             data = (self.id, )
             self.database.cursor.execute(SQL, data)
@@ -488,6 +505,7 @@ class Details(Models, ItemModelDecorator):
 class Calendars(Models, ItemModelDecorator):
     table_name = "calendars"
     table_primaries = ["id"]
+
     _reservations = None
 
     def __init__(self, db_data):
@@ -495,10 +513,9 @@ class Calendars(Models, ItemModelDecorator):
         self.date_started = db_data["date_started"]
         self.date_ended = db_data["date_ended"]
 
-
     @property
     def reservations(self):
-        if not self._reservations:
+        if self._reservations is None:
             filters = {
                 "item_id": self.item_id,
                 "is_calendared": True,
@@ -587,7 +604,6 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
         self._charge = db_data["charge"]
         self.item_id = db_data["item_id"]
         self.user_id = db_data["renter_id"]
-
 
     def charge(self):
         return f"${self._charge:,.2f}"
@@ -689,14 +705,13 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()
 
-class Orders(ReservationModels):
+class Orders(Models, ReservationModelDecorator):
     table_name = "orders"
     table_primaries = ["id"]
+
     _extensions = None
 
     def __init__(self, db_data):
-        #get reservation attributes, foreign keys
-        super(Orders, self).__init__(db_data)
         #attributes
         self.id = db_data["id"] #primary key
         self.date_placed = db_data["date_placed"]
@@ -704,12 +719,17 @@ class Orders(ReservationModels):
         self.is_dropoff_scheduled = db_data["is_dropoff_sched"]
         self.is_pickup_scheduled = db_data["is_pick_sched"]
         self._lister_id = db_data["lister_id"]
+        #reservation
+        self._res_date_started = db_data["res_date_start"]
+        self._res_date_ended = db_data["res_date_end"]
+        self._res_renter_id = db_data["renter_id"]
+        self._res_item_id = db_data["item_id"]
 
     @property
     def extensions(self):
         if self.reservation.is_extended:
-            if not self._extensions:
-                credentials = {"renter_id": self._renter_id, "item_id": self._item_id}
+            if self._extensions is None:
+                credentials = {"renter_id": self._res_renter_id, "item_id": self._res_item_id}
                 extensions = Extensions.filter(credentials)
                 #TODO: sort extensions sequentially, most recent to oldest
                 self._extensions = extensions
@@ -747,35 +767,39 @@ class Orders(ReservationModels):
         renter = self.renter()
         return f"{renter.id}.{self.date_placed.strftime('%Y.%m.%d')}"
 
-class Extensions(ReservationModels):
+class Extensions(Models, ReservationModelDecorator):
     table_name = "extensions"
     table_primaries = ["ext_charge", "ext_date_end", "renter_id"]
 
     def __init__(self, db_data):
-        #get reservation attributes, foreign keys
-        super(Extensions, self).__init__(db_data)
         #attributes
         self.ext_charge = db_data["ext_charge"]
         self.ext_date_end = db_data["ext_date_end"]
-
+        #reservation
+        self._res_date_started = db_data["res_date_start"]
+        self._res_date_ended = db_data["res_date_end"]
+        self._res_renter_id = db_data["renter_id"]
+        self._res_item_id = db_data["item_id"]
 
     def price(self):
         return f"${self.ext_charge:,.2f}"
 
-class Logistics(AddressModels):
+class Logistics(Models, AddressModelDecorator):
     table_name = "logistics"
     table_primaries = ["dt_sched", "renter_id"]
 
     def __init__(self, db_data):
-        #get address attributes, foreign keys
-        super(Logistics, self).__init__(db_data)
         #attributes
         self.date_scheduled = db_data["dt_sched"]
         self.notes = db_data["notes"]
         self.referral = db_data["referral"]
         self.timeslots = db_data["timeslots"].split(",")
         self.renter_id = db_data["renter_id"] #the renter id is stored then searched in users
-
+        #address
+        self._address_num = db_data["address_num"]
+        self._address_street = db_data["address_street"]
+        self._address_apt = db_data["address_apt"]
+        self._address_zip = db_data["address_zip"]
 
     def renter(self):
         return Users.get(self.renter_id)
@@ -801,7 +825,7 @@ class Pickups(Models):
 
     @property
     def logistics(self):
-        if not self._logistics:
+        if self._logistics is None:
             keys = {
                 "dt_sched": self._dt_sched,
                 "renter_id": self._renter_id}
@@ -810,7 +834,7 @@ class Pickups(Models):
 
     @property
     def order(self):
-        if not self._order:
+        if self._order is None:
             SQL = f"SELECT order_id FROM order_pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
             data = (self.date_pickup, self._dt_sched, self._renter_id)
             self.database.cursor.execute(SQL, data)
@@ -821,6 +845,7 @@ class Pickups(Models):
 class Dropoffs(Models):
     table_name = "dropoffs"
     table_primaries = ["dropoff_date", "dt_sched", "renter_id"]
+
     _order = None
     _logistics = None
 
@@ -831,7 +856,7 @@ class Dropoffs(Models):
 
     @property
     def logistics(self):
-        if not self._logistics:
+        if self._logistics is None:
             keys = {
                 "dt_sched": self._dt_sched,
                 "renter_id": self._renter_id}
@@ -840,7 +865,7 @@ class Dropoffs(Models):
 
     @property
     def order(self):
-        if not self._order:
+        if self._order is None:
             SQL = f"SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
             data = (self.date_dropoff, self._dt_sched, self._renter_id)
             self.database.cursor.execute(SQL, data)
@@ -861,7 +886,6 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
         self.item_id = db_data["item_id"]
         self.user_id = db_data["author_id"]
 
-
 class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"
     table_primaries = ["date_made", "user_id"]
@@ -870,7 +894,6 @@ class Testimonials(Models, UserModelDecorator):
         self.date_made = db_data["date_made"]
         self.description = db_data["description"]
         self.user_id = db_data["user_id"]
-
 
     @classmethod
     def get(cls, testimonial_keys):
@@ -903,7 +926,6 @@ class Tags(Models):
 
     def __init__(self, db_data):
         self.name = db_data["tag_name"]
-
 
     @classmethod
     def items_by_tag(cls, tag_name):

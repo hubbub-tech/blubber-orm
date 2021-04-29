@@ -104,3 +104,6 @@ def generate_item():
         },
         "address": address
     }
+
+def generate_reservation():
+    pass

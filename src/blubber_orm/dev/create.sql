@@ -38,6 +38,7 @@ CREATE TABLE profiles (
 
 CREATE TABLE carts (
   total float DEFAULT 0.0,
+  total_deposit float DEFAULT 0.0, /* Ade 5/4 - needed a way to track deposits as well */
   id integer, /* user id */
   PRIMARY KEY (id),
   FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE

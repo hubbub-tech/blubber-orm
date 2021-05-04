@@ -518,8 +518,7 @@ class Calendars(Models, ItemModelDecorator):
         if self._reservations is None:
             filters = {
                 "item_id": self.item_id,
-                "is_calendared": True,
-                "is_expired": False}
+                "is_calendared": True}
             self._reservations = Reservations.filter(filters)
         return self._reservations
 
@@ -600,7 +599,6 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
         self.date_ended = db_data["date_ended"]
         self.is_calendared = db_data["is_calendared"]
         self.is_extended = db_data["is_extended"]
-        self.is_expired = db_data["is_expired"]
         self._charge = db_data["charge"]
         self.item_id = db_data["item_id"]
         self.user_id = db_data["renter_id"]
@@ -610,17 +608,6 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
 
     def length(self):
         return (self.date_started - self.date_ended).days
-
-    def expire(self):
-        if date.today() > self.date_ended:
-            reservation_keys = {
-                "date_started": self.date_started,
-                "date_ended": self.date_ended,
-                "renter_id": self.user_id,
-                "item_id": self.item_id}
-            changes = {"is_expired": True}
-            Reservations.set(reservation_keys, changes)
-            self.refresh()
 
     def reserve(self):
         if self.is_calendared == False:

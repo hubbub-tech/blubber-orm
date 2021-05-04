@@ -21,3 +21,5 @@ from .models import Testimonials
 
 #WARNING: these functions will edit whichever DB is linked in the environment...
 from .queries import _create_database, _destroy_database
+from .queries import make_lister, make_renter, search_lister, search_renter
+from .queries import mark_dropoff_as_completed, mark_pickup_as_completed

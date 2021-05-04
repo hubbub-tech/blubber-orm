@@ -121,10 +121,7 @@ class Addresses(Models):
         targets_str = ", ".join(targets)
         SQL = f"""
             UPDATE addresses SET {targets_str}
-                WHERE num = %s
-                AND street = %s
-                AND apt = %s
-                AND zip = %s;""" # Note: no quotes
+                WHERE num = %s AND street = %s AND apt = %s AND zip = %s;""" # Note: no quotes
         updates = [value for value in changes.values()]
         keys = [
             address_keys['num'],
@@ -180,7 +177,7 @@ class Addresses(Models):
 
     @property
     def occupants(self):
-        if not self._occupants:
+        if self._occupants is None:
             #get all users at this address
             SQL = f"""
                 SELECT * FROM users
@@ -199,7 +196,7 @@ class Addresses(Models):
 
     @property
     def items(self):
-        if not self._items:
+        if self._items is None:
             #get all items at this address
             SQL = f"""
                 SELECT * FROM items
@@ -298,6 +295,9 @@ class Users(Models, AddressModelDecorator):
             self._reservations = Reservations.filter(credentials)
         return self._reservations
 
+    def refresh(self):
+        self = Users.get(self.id)
+
 class Profiles(Models, UserModelDecorator):
     table_name = "profiles"
     table_primaries = ["id"]
@@ -321,13 +321,14 @@ class Carts(Models, UserModelDecorator):
         #attributes
         self.user_id = db_data["id"]
         self._total = db_data["total"]
+        self._total_deposit = db_data["total_deposit"]
 
 
     def print_total(self):
         return f"${round(self._total, 2):,.2f}"
 
     def size(self):
-        return len(self.contents())
+        return len(self.contents)
 
     @property
     def contents(self):
@@ -343,24 +344,32 @@ class Carts(Models, UserModelDecorator):
 
     #for remove() and add(), you need to pass the specific res, bc no way to tell otherwise
     def remove(self, reservation):
+        #ASSERT reservation.item_id is associated with cart_id
         SQL = f"DELETE * FROM shopping WHERE cart_id = %s AND item_id = %s;" #does this return a tuple or single value?
         data = (self.user_id, reservation.item_id)
         self.database.cursor.execute(SQL, data)
         self._total -= reservation._charge
+        self._total_deposit -= reservation._deposit
         SQL = f"UPDATE carts SET total = %s WHERE id = %s;"
         data = (self._total, self.user_id)
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
+        #resetting self.contents
+        self._contents = None
 
     def add(self, reservation):
-        SQL = f"INSERT INTO shopping VALUES (%s, %s);" #does this return a tuple or single value?
+        #ASSERT reservation.item_id is NOT associated with cart_id
+        SQL = f"INSERT INTO shopping (user_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.user_id, reservation.item_id) #sensitive to tuple order
         self.database.cursor.execute(SQL, data)
         self._total += reservation._charge
+        self._total_deposit += reservation._deposit
         SQL = f"UPDATE carts SET total = %s WHERE id = %s;"
         data = (self._total, self.user_id)
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
+        #resetting self.contents
+        self._contents = None
 
     def refresh(self):
         self = Carts.get(self.user_id)
@@ -440,7 +449,7 @@ class Items(Models, AddressModelDecorator):
         data = (True, user.id, self.id)
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
-        self = Items.get(self.id)
+        self.refresh()
 
     def unlock(self):
         SQL = f"""UPDATE items
@@ -451,6 +460,9 @@ class Items(Models, AddressModelDecorator):
         data = (False, 0, False, self.id)
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
+        self.refresh()
+
+    def refresh(self):
         self = Items.get(self.id)
 
 class Details(Models, ItemModelDecorator):
@@ -600,8 +612,17 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
         self.is_calendared = db_data["is_calendared"]
         self.is_extended = db_data["is_extended"]
         self._charge = db_data["charge"]
+        self._deposit = db_data["deposit"]
         self.item_id = db_data["item_id"]
         self.user_id = db_data["renter_id"]
+        self.dt_created = db_data["dt_created"]
+
+    def cost(self):
+        """This is how much user must pay = charge + deposit"""
+        return self._charge + self._deposit
+
+    def deposit(self):
+        return f"${self._deposit:,.2f}"
 
     def charge(self):
         return f"${self._charge:,.2f}"
@@ -761,6 +782,7 @@ class Extensions(Models, ReservationModelDecorator):
     def __init__(self, db_data):
         #attributes
         self.ext_charge = db_data["ext_charge"]
+        self._deposit = db_data["deposit"]
         self.ext_date_end = db_data["ext_date_end"]
         #reservation
         self._res_date_started = db_data["res_date_start"]
@@ -782,6 +804,7 @@ class Logistics(Models, AddressModelDecorator):
         self.referral = db_data["referral"]
         self.timeslots = db_data["timeslots"].split(",")
         self.renter_id = db_data["renter_id"] #the renter id is stored then searched in users
+        self.chosen_time = db_data["chosen_time"]
         #address
         self._address_num = db_data["address_num"]
         self._address_street = db_data["address_street"]

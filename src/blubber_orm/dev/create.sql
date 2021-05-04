@@ -1,4 +1,4 @@
---\i Projects/hubbub/blubber/src/blubber_orm/dev/create.sql
+--\i Projects/hubbub/hubbub_ops/create.sql
 
  CREATE TABLE addresses (
   num real,
@@ -16,9 +16,9 @@ CREATE TABLE users (
   email text UNIQUE,
   password varchar(100),
   payment varchar(50),
-  dt_joined timestamp,
-  dt_last_active timestamp,
-  is_blocked boolean,
+  dt_joined timestamp DEFAULT LOCALTIMESTAMP,
+  dt_last_active timestamp DEFAULT LOCALTIMESTAMP,
+  is_blocked boolean DEFAULT FALSE,
   address_num real,
   address_street varchar(100),
   address_apt varchar(50),
@@ -28,33 +28,32 @@ CREATE TABLE users (
 );
 
 CREATE TABLE profiles (
-  phone varchar(10),
-  birthday date, /* HMM no birthday actually */
-  has_pic boolean,
+  phone varchar(20),
+  has_pic boolean DEFAULT FALSE,
   bio text,
-  id integer, /* HMM changed this for easy referencing */
+  id integer, /*user id*/
   PRIMARY KEY (id),
-  FOREIGN KEY (id) REFERENCES users (id)
+  FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE carts (
-  total float,
-  id integer, /* HMM changed this for easy referencing */
+  total float DEFAULT 0.0,
+  id integer, /* user id */
   PRIMARY KEY (id),
-  FOREIGN KEY (id) REFERENCES users (id)
+  FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE items (
   id SERIAL,
   name varchar(100),
   price float,
-  is_available boolean,
-  is_featured boolean,
-  dt_created timestamp,
-  is_locked boolean,
+  is_available boolean DEFAULT TRUE,
+  is_featured boolean DEFAULT FALSE,
+  dt_created timestamp DEFAULT LOCALTIMESTAMP,
+  is_locked boolean DEFAULT FALSE,
   last_locked integer,
-  is_routed boolean,
-  lister_id integer, /* toSELF coming from users table not listers table */
+  is_routed boolean DEFAULT FALSE,
+  lister_id integer,
   address_num real,
   address_street varchar(100),
   address_apt varchar(50),
@@ -69,17 +68,17 @@ CREATE TABLE details (
   weight integer,
   volume integer,
   description text,
-  id integer, /* HMM changed this for easy referencing */
+  id integer, /* item id */
   PRIMARY KEY (id),
-  FOREIGN KEY (id) REFERENCES items (id)
+  FOREIGN KEY (id) REFERENCES items (id) ON DELETE CASCADE
 );
 
 CREATE TABLE calendars (
   date_started date,
   date_ended date,
-  id integer, /* HMM changed this for easy referencing */
+  id integer, /* item id */
   PRIMARY KEY (id),
-  FOREIGN KEY (id) REFERENCES items (id)
+  FOREIGN KEY (id) REFERENCES items (id) ON DELETE CASCADE
 );
 
 CREATE TABLE shopping (
@@ -93,15 +92,16 @@ CREATE TABLE shopping (
 CREATE TABLE reservations (
   date_started date,
   date_ended date,
-  is_calendared boolean,
-  is_extended boolean,
-  is_expired boolean,
+  is_calendared boolean DEFAULT FALSE,
+  is_extended boolean DEFAULT FALSE,
   charge float,
-  renter_id integer, /* HMM changed this attribute */
+  renter_id integer,
   item_id integer,
+  deposit float,
+  dt_created timestamp,
   PRIMARY KEY (date_started, date_ended, renter_id, item_id),
-  FOREIGN KEY (renter_id) REFERENCES users (id),
-  FOREIGN KEY (item_id) REFERENCES items (id)
+  FOREIGN KEY (renter_id) REFERENCES users (id), ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
 );
 
 CREATE TABLE listers (
@@ -119,33 +119,34 @@ CREATE TABLE renters (
 CREATE TABLE reviews (
   id SERIAL,
   body text,
-  dt_created timestamp,
+  dt_created timestamp DEFAULT LOCALTIMESTAMP,
   rating float,
   item_id integer,
   author_id integer,
   PRIMARY KEY (id),
-  FOREIGN KEY (item_id) REFERENCES items (id),
+  FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE,
   FOREIGN KEY (author_id) REFERENCES renters (renter_id)
 );
 
 CREATE TABLE testimonials (
-  date_created date,
+  date_created date DEFAULT LOCALTIMESTAMP,
   description text,
   user_id integer,
-  PRIMARY KEY (user_id, date_created)
+  PRIMARY KEY (user_id, date_created),
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE orders (
   id integer,
   date_placed date,
   is_online_pay boolean,
-  is_dropoff_sched boolean,
-  is_pick_sched boolean,
+  is_dropoff_sched boolean DEFAULT FALSE,
   renter_id integer,
   lister_id integer,
   item_id integer,
   res_date_start date,
   res_date_end date,
+  is_pickup_sched boolean DEFAULT FALSE,
   PRIMARY KEY (id),
   FOREIGN KEY (lister_id) REFERENCES listers (lister_id),
   FOREIGN KEY (res_date_start, res_date_end, renter_id, item_id) REFERENCES reservations (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE
@@ -158,12 +159,13 @@ CREATE TABLE extensions (
   item_id integer,
   ext_charge float,
   ext_date_end date CHECK (ext_date_end > res_date_end),
+  deposit float,
   PRIMARY KEY (renter_id, item_id, ext_date_end),
   FOREIGN KEY (res_date_start, res_date_end, renter_id, item_id) REFERENCES reservations (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE
 );
 
 CREATE TABLE logistics (
-  dt_sched timestamp,
+  dt_sched timestamp DEFAULT LOCALTIMESTAMP,
   notes text,
   referral varchar(100),
   timeslots varchar(100),
@@ -172,6 +174,7 @@ CREATE TABLE logistics (
   address_street varchar(100),
   address_apt varchar(50),
   address_zip varchar(10),
+  chosen_time time,
   PRIMARY KEY (dt_sched, renter_id),
   FOREIGN KEY (renter_id) REFERENCES renters (renter_id),
   FOREIGN KEY (address_num, address_street, address_apt, address_zip) REFERENCES addresses (num, street, apt, zip)
@@ -211,6 +214,7 @@ CREATE TABLE order_pickups (
   pickup_date date,
   renter_id integer,
   dt_sched timestamp,
+  dt_completed timestamp,
   PRIMARY KEY (order_id),
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
   FOREIGN KEY (pickup_date, dt_sched, renter_id) REFERENCES pickups (pickup_date, dt_sched, renter_id) ON DELETE CASCADE
@@ -221,9 +225,10 @@ CREATE TABLE order_dropoffs (
   dropoff_date date,
   renter_id integer,
   dt_sched timestamp,
+  dt_completed timestamp,
   PRIMARY KEY (order_id),
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
   FOREIGN KEY (dropoff_date, dt_sched, renter_id) REFERENCES dropoffs (dropoff_date, dt_sched, renter_id) ON DELETE CASCADE
 );
-
-ALTER TABLE extensions ADD CONSTRAINT chk_ext_date CHECK (ext_date_end > localtimestamp);
+/* needed to drop the following--see data migration notes - caro 5/4 */
+/* ALTER TABLE extensions ADD CONSTRAINT chk_ext_date CHECK (ext_date_end > localtimestamp); */

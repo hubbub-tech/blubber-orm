@@ -1,5 +1,8 @@
+import pytz
+from datetime import datetime
+
 from .db import DatabaseConnection
-from .models import Users
+from .models import Users, Orders
 
 def _create_database():
     try:
@@ -38,6 +41,7 @@ def make_lister(user):
     database.connection.commit()
 
 def search_renter(user):
+    database = DatabaseConnection.get_instance()
     SQL = f"SELECT * FROM renters WHERE renter_id = %s;" # Note: no quotes
     data = (user.id, )
     database.cursor.execute(SQL, data)
@@ -47,6 +51,7 @@ def search_renter(user):
         return False
 
 def search_lister(user):
+    database = DatabaseConnection.get_instance()
     SQL = f"SELECT * FROM listers WHERE lister_id = %s;" # Note: no quotes
     data = (user.id, )
     database.cursor.execute(SQL, data)
@@ -57,15 +62,33 @@ def search_lister(user):
 
 #TODO
 def mark_dropoff_as_completed(order):
+    database = DatabaseConnection.get_instance()
     #ASSERT object is type order
+    assert (type(order) == Orders), "TypeError, must be of type order."
     #Check to make sure there is a complete dropoff row
     #Check to see if order and dropoff are associated in order_dropoffs
-    #Change dropoff dt_completed to current time
-    pass
+    dropoff = order.get_dropoff()
+    if dropoff:
+        #Change dropoff dt_completed to current time
+        SQL = f"UPDATE order_dropoffs SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
+        data = (datetime.now(tz=pytz.UTC), order.id)
+        database.cursor.execute(SQL, data)
+        database.connection.commit()
+    else:
+        raise Exception(f"No dropoff object is associated with <Order {order.id}>.")
 
 def mark_pickup_as_completed(order):
+    database = DatabaseConnection.get_instance()
     #ASSERT object is type order
+    assert (type(order) == Orders), "TypeError, must be of type order."
     #Check to make sure there is a complete pickup row
     #Check to see if order and pickup are associated in order_pickups
-    #Change pickup dt_completed to current time
-    pass
+    dropoff = order.get_dropoff()
+    if dropoff:
+        #Change pickup dt_completed to current time
+        SQL = f"UPDATE order_pickups SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
+        data = (datetime.now(tz=pytz.UTC), order.id)
+        database.cursor.execute(SQL, data)
+        database.connection.commit()
+    else:
+        raise Exception(f"No pickup object is associated with <Order {order.id}>.")

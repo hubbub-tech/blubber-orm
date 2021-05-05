@@ -4,6 +4,8 @@ from datetime import datetime, date, timedelta
 from .db import sql_to_dictionary
 from .base import Models
 
+#Assertions - cannot update primary keys
+
 class ItemModelDecorator:
     """
     A decorator on Models which provides access to the item linked by the foreign

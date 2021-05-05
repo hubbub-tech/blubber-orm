@@ -54,6 +54,13 @@ class AbstractModels(ABC):
 
     @classmethod
     @abstractmethod
+    def get_all(cls, id):
+        """
+        Get all rows from this table.
+        """
+
+    @classmethod
+    @abstractmethod
     def set(cls, id, attributes):
         """
         Edit data in a particular row by passing its primary key(s) and the changes
@@ -118,6 +125,16 @@ class Models(AbstractModels):
         cls.database.cursor.execute(SQL, data)
         db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_obj)
+
+    @classmethod
+    def get_all(cls):
+        SQL = f"SELECT * FROM {cls.table_name};" # Note: no quotes
+        cls.database.cursor.execute(SQL)
+        obj_list = []
+        for query in cls.database.cursor.fetchall():
+            db_obj = sql_to_dictionary(cls.database.cursor, query)
+            obj_list.append(cls(db_obj))
+        return obj_list
 
     @classmethod
     def set(cls, id, attributes):

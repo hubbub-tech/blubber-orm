@@ -1,6 +1,5 @@
 import os
 
-from .db import DatabaseConnection
 from .db import parse_uri
 
 from .models import Addresses
@@ -23,3 +22,13 @@ from .models import Testimonials
 from .queries import _create_database, _destroy_database
 from .queries import make_lister, make_renter, search_lister, search_renter
 from .queries import mark_dropoff_as_completed, mark_pickup_as_completed
+
+def get_db():
+    """
+    Get an instance of the database connection for custom uses.
+
+    This is an object which contains the database connection, `.connection`, and
+    a cursor for executing SQL queries, `.cursor`.
+    """
+    from .db import DatabaseConnection
+    return DatabaseConnection.get_instance()

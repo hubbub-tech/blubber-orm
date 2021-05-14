@@ -117,6 +117,7 @@ class Addresses(Models):
         db_address = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_address) # query here
 
+    #TODO: Addresses shouldnt change once created
     @classmethod
     def set(cls, address_keys, changes):
         targets = [f"{target} = %s" for target in changes.keys()]
@@ -238,20 +239,77 @@ class Users(Models, AddressModelDecorator):
         #attributes
         self.id = db_data["id"] #primary key
         self._name = db_data["name"]
-        self.email = db_data["email"]
-        self.password = db_data["password"] #already hashed
-        self.payment = db_data["payment"]
+        self._email = db_data["email"]
+        self._password = db_data["password"] #already hashed
+        self._payment = db_data["payment"]
         self.dt_joined = db_data["dt_joined"]
-        self.dt_last_active = db_data["dt_last_active"]
-        self.is_blocked = db_data["is_blocked"]
+        self._dt_last_active = db_data["dt_last_active"]
+        self._is_blocked = db_data["is_blocked"]
         #address
         self._address_num = db_data["address_num"]
         self._address_street = db_data["address_street"]
         self._address_apt = db_data["address_apt"]
         self._address_zip = db_data["address_zip"]
 
-    def phone(self):
-        return self.profile.phone
+    @property
+    def email(self):
+        return self._email
+
+    @email.setter
+    def email(self, email):
+        SQL = f"UPDATE users SET email = %s WHERE id = %s;" # Note: no quotes
+        data = (email, self.id)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+        self._email = email
+
+    @property
+    def password(self):
+        return self._password
+
+    @password.setter
+    def password(self, hashed_password):
+        SQL = f"UPDATE users SET password = %s WHERE id = %s;" # Note: no quotes
+        data = (hashed_password, self.id)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+        self._password = hashed_password
+
+    @property
+    def payment(self):
+        return self._payment
+
+    @payment.setter
+    def payment(self, email):
+        SQL = f"UPDATE users SET payment = %s WHERE id = %s;" # Note: no quotes
+        data = (payment, self.id)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+        self._payment = payment
+
+    @property
+    def dt_last_active(self):
+        return self._dt_last_active
+
+    @dt_last_active.setter
+    def dt_last_active(self, dt_last_active):
+        SQL = f"UPDATE users SET dt_last_active = %s WHERE id = %s;" # Note: no quotes
+        data = (dt_last_active, self.id)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+        self._dt_last_active = dt_last_active
+
+    @property
+    def is_blocked(self):
+        return self._is_blocked
+
+    @is_blocked.setter
+    def is_blocked(self, is_blocked):
+        SQL = f"UPDATE users SET is_blocked = %s WHERE id = %s;" # Note: no quotes
+        data = (is_blocked, self.id)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+        self._is_blocked = is_blocked
 
     @property
     def cart(self):
@@ -267,7 +325,8 @@ class Users(Models, AddressModelDecorator):
 
     @property
     def name(self):
-        return " ".join(self._name.split(",")).lower().title()
+        first, last = self._name.split(",")
+        return f"{first} {last}"
 
     @property
     def listings(self):
@@ -300,6 +359,7 @@ class Users(Models, AddressModelDecorator):
     def refresh(self):
         self = Users.get(self.id)
 
+#No setter-getter because this class is not important
 class Profiles(Models, UserModelDecorator):
     table_name = "profiles"
     table_primaries = ["id"]
@@ -313,6 +373,7 @@ class Profiles(Models, UserModelDecorator):
     def refresh(self):
         self = Profiles.get(self.user_id)
 
+#NOTE: attributes total and total_deposit should NEVER have to be directly edited
 class Carts(Models, UserModelDecorator):
     table_name = "carts"
     table_primaries = ["id"]
@@ -344,6 +405,17 @@ class Carts(Models, UserModelDecorator):
             self._contents = items
         return self._contents
 
+    def get_contents_with_reservations(self):
+        queued_reservations = Reservations.filter({
+            "is_in_cart": True,
+            "renter_id": self.user_id,
+            "is_calendared": False
+            })
+        if queued_reservations:
+            return [reservation.item for reservation in queued_reservations]
+        else:
+            return None
+
     #for remove() and add(), you need to pass the specific res, bc no way to tell otherwise
     def remove(self, reservation):
         #ASSERT reservation.item_id is associated with cart_id
@@ -355,7 +427,18 @@ class Carts(Models, UserModelDecorator):
         SQL = f"UPDATE carts SET total = %s WHERE id = %s;"
         data = (self._total, self.user_id)
         self.database.cursor.execute(SQL, data)
+
+        SQL = f"""
+            UPDATE reservations SET is_in_cart = %s
+                WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
+        data = (False,
+            reservation.item_id,
+            reservation.user_id,
+            reservation.date_started,
+            reservation.date_ended)
+        self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
+
         #resetting self.contents
         self._contents = None
 
@@ -364,14 +447,45 @@ class Carts(Models, UserModelDecorator):
         SQL = f"INSERT INTO shopping (user_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.user_id, reservation.item_id) #sensitive to tuple order
         self.database.cursor.execute(SQL, data)
+
         self._total += reservation._charge
         self._total_deposit += reservation._deposit
+
         SQL = f"UPDATE carts SET total = %s WHERE id = %s;"
         data = (self._total, self.user_id)
         self.database.cursor.execute(SQL, data)
+
+        SQL = f"""
+            UPDATE reservations SET is_in_cart = %s
+                WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
+        data = (True,
+            reservation.item_id,
+            reservation.user_id,
+            reservation.date_started,
+            reservation.date_ended)
+        self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
+
         #resetting self.contents
         self._contents = None
+
+    def remove_without_reservation(self, item):
+        """This is a non-commital add to cart where the user doesn't have to reserve immediately."""
+        #ASSERT reservation.item_id is NOT associated with cart_id
+        SQL = f"INSERT INTO shopping (user_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
+        data = (self.user_id, item.id) #sensitive to tuple order
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+
+    #NOTE to add a reservation to this later, "remove_without_reservation()" then re-add with "add()"
+    def add_without_reservation(self, item):
+        """This resolves the non-commital 'add to cart' where the user didn't reserve."""
+        #ASSERT reservation.item_id is NOT associated with cart_id
+        SQL = f"INSERT INTO shopping (user_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
+        data = (self.user_id, item.id) #sensitive to tuple order
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+
 
     def refresh(self):
         self = Carts.get(self.user_id)
@@ -393,8 +507,8 @@ class Items(Models, AddressModelDecorator):
         self._price_per_day = self._price / 10.00 #TODO
         self._price_per_week = self._price / 5.00 #TODO
         self._price_per_month = self._price / 2.00 #TODO
-        self.is_available = db_data["is_available"]
-        self.is_featured = db_data["is_featured"]
+        self._is_available = db_data["is_available"]
+        self._is_featured = db_data["is_featured"]
         self.dt_created = db_data["dt_created"]
         self.is_locked = db_data["is_locked"]
         self.is_routed = db_data["is_routed"]
@@ -405,6 +519,30 @@ class Items(Models, AddressModelDecorator):
         self._address_street = db_data["address_street"]
         self._address_apt = db_data["address_apt"]
         self._address_zip = db_data["address_zip"]
+
+    @property
+    def is_available(self):
+        return self._is_available
+
+    @is_available.setter
+    def is_available(self, is_available):
+        SQL = f"UPDATE users SET is_available = %s WHERE id = %s;" # Note: no quotes
+        data = (is_available, self.id)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+        self._is_available = is_available
+
+    @property
+    def is_featured(self):
+        return self._is_featured
+
+    @is_featured.setter
+    def is_featured(self, is_featured):
+        SQL = f"UPDATE users SET is_featured = %s WHERE id = %s;" # Note: no quotes
+        data = (is_featured, self.id)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+        self._is_featured = is_featured
 
     @property
     def details(self):
@@ -454,11 +592,7 @@ class Items(Models, AddressModelDecorator):
         self.refresh()
 
     def unlock(self):
-        SQL = f"""UPDATE items
-            SET is_locked = %s,
-                last_locked = %s,
-                is_routed = %s
-                WHERE id = %s;""" # Note: no quotes
+        SQL = f"""UPDATE items SET is_locked = %s, last_locked = %s, is_routed = %s WHERE id = %s;""" # Note: no quotes
         data = (False, 0, False, self.id)
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
@@ -503,6 +637,7 @@ class Details(Models, ItemModelDecorator):
         else:
             return "Very Large"
 
+    #RENAME: abbreviation?
     def abbreviate(self, max_chars=127):
         abbreviation = ''
         if len(self.description) > max_chars:
@@ -535,6 +670,14 @@ class Calendars(Models, ItemModelDecorator):
                 "is_calendared": True}
             self._reservations = Reservations.filter(filters)
         return self._reservations
+
+    def extend(self, new_date_ended):
+        if new_date_ended > self.date_ended:
+            SQL = f"""UPDATE calendars SET date_ended = %s WHERE id = %s;""" # Note: no quotes
+            data = (new_date_ended, self.item_id)
+            self.database.cursor.execute(SQL, data)
+            self.database.connection.commit()
+        self.refresh()
 
     def size(self):
         return len(self.reservations)
@@ -613,6 +756,7 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
         self.date_ended = db_data["date_ended"]
         self.is_calendared = db_data["is_calendared"]
         self.is_extended = db_data["is_extended"]
+        self.is_in_cart = db_data["is_in_cart"]
         self._charge = db_data["charge"]
         self._deposit = db_data["deposit"]
         self.item_id = db_data["item_id"]
@@ -632,7 +776,8 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
     def length(self):
         return (self.date_started - self.date_ended).days
 
-    def reserve(self):
+    #NOTE: is this convention good given that other bools do setter-getter?
+    def finalize(self):
         if self.is_calendared == False:
             reservation_keys = {
                 "date_started": self.date_started,
@@ -720,6 +865,7 @@ class Orders(Models, ReservationModelDecorator):
     table_primaries = ["id"]
 
     _extensions = None
+    _lister = None
 
     def __init__(self, db_data):
         #attributes
@@ -739,12 +885,18 @@ class Orders(Models, ReservationModelDecorator):
     def extensions(self):
         if self.reservation.is_extended:
             if self._extensions is None:
-                credentials = {"renter_id": self._res_renter_id, "item_id": self._res_item_id}
-                extensions = Extensions.filter(credentials)
+                filters = {"renter_id": self._res_renter_id, "item_id": self._res_item_id}
+                extensions = Extensions.filter(filters)
                 #TODO: sort extensions sequentially, most recent to oldest
                 self._extensions = extensions
             return self._extensions
         return None
+
+    @property
+    def lister(self):
+        if self._lister is None:
+            self._lister = Users.get(self._lister_id)
+        return self._lister
 
     def get_pickup(self):
         if self.is_pickup_scheduled:
@@ -766,17 +918,6 @@ class Orders(Models, ReservationModelDecorator):
         else:
             return None
 
-    def lister(self):
-        return Users.get(self._lister_id) #the renter id is stored then searched in users
-
-    # find a simpler way to see if an order is extended
-    def is_extended(self):
-        return self.reservation.is_extended
-
-    def identifier(self):
-        renter = self.renter()
-        return f"{renter.id}.{self.date_placed.strftime('%Y.%m.%d')}"
-
 class Extensions(Models, ReservationModelDecorator):
     table_name = "extensions"
     table_primaries = ["ext_charge", "ext_date_end", "renter_id"]
@@ -795,13 +936,63 @@ class Extensions(Models, ReservationModelDecorator):
     def price(self):
         return f"${self.ext_charge:,.2f}"
 
+    def refresh(self):
+        extension_keys = {
+            "ext_charge": self.ext_charge,
+            "ext_date_end": self.ext_date_end,
+            "renter_id": self._res_renter_id}
+        self = Extensions.get(extension_keys)
+
+    @classmethod
+    def set(cls, extension_keys, changes):
+        targets = [f"{target} = %s" for target in changes.keys()]
+        targets_str = ", ".join(targets)
+        SQL = f"""
+            UPDATE extensions SET {targets_str}
+                WHERE ext_charge = %s AND ext_date_end = %s AND renter_id = %s;""" # Note: no quotes
+        updates = [value for value in changes.values()]
+        keys = [
+            extension_keys['ext_charge'],
+            extension_keys['ext_date_end'],
+            extension_keys['renter_id']]
+        data = tuple(updates + keys)
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
+
+    @classmethod
+    def get(cls, extension_keys):
+        SQL = f"""
+            SELECT * FROM extensions
+                WHERE ext_charge = %s AND ext_date_end = %s AND renter_id = %s;""" # Note: no quotes
+        data = (
+            extension_keys['ext_charge'],
+            extension_keys['ext_date_end'],
+            extension_keys['renter_id'])
+        cls.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        return cls(db_obj)
+
+    @classmethod
+    def delete(cls, extension_keys):
+        SQL = f"""
+            DELETE * FROM extensions
+                WHERE ext_charge = %s AND ext_date_end = %s AND renter_id = %s;""" # Note: no quotes
+        data = (
+            extension_keys['ext_charge'],
+            extension_keys['ext_date_end'],
+            extension_keys['renter_id'])
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
+
 class Logistics(Models, AddressModelDecorator):
     table_name = "logistics"
     table_primaries = ["dt_sched", "renter_id"]
 
+    _renter = None
+
     def __init__(self, db_data):
         #attributes
-        self.date_scheduled = db_data["dt_sched"]
+        self.dt_scheduled = db_data["dt_sched"]
         self.notes = db_data["notes"]
         self.referral = db_data["referral"]
         self.timeslots = db_data["timeslots"].split(",")
@@ -813,8 +1004,11 @@ class Logistics(Models, AddressModelDecorator):
         self._address_apt = db_data["address_apt"]
         self._address_zip = db_data["address_zip"]
 
+    @property
     def renter(self):
-        return Users.get(self.renter_id)
+        if self._renter is None:
+            self._renter = Users.get(self.renter_id)
+        return self._renter
 
     @classmethod
     def get(cls, logistics_keys):
@@ -823,6 +1017,30 @@ class Logistics(Models, AddressModelDecorator):
         cls.database.cursor.execute(SQL, data)
         db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_obj)
+
+    @classmethod
+    def set(cls, logistics_keys, changes):
+        targets = [f"{target} = %s" for target in changes.keys()]
+        targets_str = ", ".join(targets)
+        SQL = f"""UPDATE logistics SET {targets_str} WHERE dt_sched = %s AND renter_id = %s;""" # Note: no quotes
+        updates = [value for value in changes.values()]
+        keys = [logistics_keys['dt_sched'], logistics_keys['renter_id']]
+        data = tuple(updates + keys)
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
+
+    @classmethod
+    def delete(cls, logistics_keys):
+        SQL = f"DELETE * FROM logistics WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
+        data = (logistics_keys['dt_sched'], logistics_keys['renter_id'])
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
+
+    def refresh(self):
+        logistics_keys = {
+            "dt_sched": self.dt_scheduled,
+            "renter_id": self.renter_id}
+        self = Logistics.get(logistics_keys)
 
 class Pickups(Models):
     table_name = "pickups"
@@ -854,6 +1072,39 @@ class Pickups(Models):
             self._order = Orders.get(db_obj["order_id"])
         return self._order
 
+    @classmethod
+    def get(cls, pickup_keys):
+        SQL = f"SELECT * FROM pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        data = (pickup_keys["pickup_date"], pickup_keys["dt_sched"], pickup_keys["renter_id"])
+        cls.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        return cls(db_obj)
+
+    @classmethod
+    def set(cls, pickup_keys, changes):
+        targets = [f"{target} = %s" for target in changes.keys()]
+        targets_str = ", ".join(targets)
+        SQL = f"UPDATE pickups SET {targets_str} WHERE pickup_date = %s, AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
+        updates = [value for value in changes.values()]
+        keys = [pickup_keys['pickup_date'], pickup_keys['dt_sched'], pickup_keys['renter_id']]
+        data = tuple(updates + keys)
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
+
+    @classmethod
+    def delete(cls, pickup_keys):
+        SQL = f"DELETE * FROM pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        data = (pickup_keys["pickup_date"], pickup_keys["dt_sched"], pickup_keys["renter_id"])
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
+
+    def refresh(self):
+        pickup_keys = {
+            "pickup_date": self.date_pickup,
+            "dt_sched": self.dt_scheduled,
+            "renter_id": self.renter_id}
+        self = Pickups.get(pickup_keys)
+
 class Dropoffs(Models):
     table_name = "dropoffs"
     table_primaries = ["dropoff_date", "dt_sched", "renter_id"]
@@ -884,6 +1135,39 @@ class Dropoffs(Models):
             db_obj = sql_to_dictionary(self.database.cursor, self.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
             self._order = Orders.get(db_obj["order_id"])
         return self._order
+
+    @classmethod
+    def get(cls, dropoff_keys):
+        SQL = f"SELECT * FROM dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        data = (dropoff_keys["dropoff_date"], dropoff_keys["dt_sched"], dropoff_keys["renter_id"])
+        cls.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        return cls(db_obj)
+
+    @classmethod
+    def set(cls, dropoff_keys, changes):
+        targets = [f"{target} = %s" for target in changes.keys()]
+        targets_str = ", ".join(targets)
+        SQL = f"UPDATE dropoffs SET {targets_str} WHERE dropoff_date = %s, AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
+        updates = [value for value in changes.values()]
+        keys = [dropoff_keys['dropoff_date'], dropoff_keys['dt_sched'], dropoff_keys['renter_id']]
+        data = tuple(updates + keys)
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
+
+    @classmethod
+    def delete(cls, dropoff_keys):
+        SQL = f"DELETE * FROM dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        data = (dropoff_keys["dropoff_date"], dropoff_keys["dt_sched"], dropoff_keys["renter_id"])
+        cls.database.cursor.execute(SQL, data)
+        cls.database.connection.commit()
+
+    def refresh(self):
+        dropoff_keys = {
+            "dropoff_date": self.date_dropoff,
+            "dt_sched": self.dt_scheduled,
+            "renter_id": self.renter_id}
+        self = Dropoffs.get(dropoff_keys)
 
 class Reviews(Models, UserModelDecorator, ItemModelDecorator):
     table_name = "reviews"
@@ -921,7 +1205,7 @@ class Testimonials(Models, UserModelDecorator):
 
     @classmethod
     def delete(cls, testimonial_keys):
-        SQL = f"DELETE * FROM {cls.table_name} WHERE date_made = %s AND user_id = %s;" # Note: no quotes
+        SQL = f"DELETE * FROM testimonials WHERE date_made = %s AND user_id = %s;" # Note: no quotes
         data = (testimonial_keys["date_made"], testimonial_keys["user_id"])
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()
@@ -930,7 +1214,7 @@ class Testimonials(Models, UserModelDecorator):
         testimonial_keys = {
             "date_made": self.date_made,
             "user_id": self.user_id}
-        self = Tags.get(testimonial_keys)
+        self = Testimonials.get(testimonial_keys)
 
 class Tags(Models):
     table_name = "tags"
@@ -964,7 +1248,7 @@ class Tags(Models):
 
     @classmethod
     def delete(cls, name):
-        SQL = f"DELETE * FROM {cls.table_name} WHERE tag_name = %s;" # Note: no quotes
+        SQL = f"DELETE * FROM tags WHERE tag_name = %s;" # Note: no quotes
         data = (name, )
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()

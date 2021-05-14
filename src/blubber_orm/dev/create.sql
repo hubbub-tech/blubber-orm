@@ -95,6 +95,7 @@ CREATE TABLE reservations (
   date_ended date,
   is_calendared boolean DEFAULT FALSE,
   is_extended boolean DEFAULT FALSE,
+  is_in_cart boolean DEFAULT FALSE, /* ade 5/5 - needed to tell which res is in cart*/
   charge float,
   renter_id integer,
   item_id integer,

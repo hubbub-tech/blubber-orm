@@ -54,7 +54,7 @@ class AbstractModels(ABC):
 
     @classmethod
     @abstractmethod
-    def get_all(cls, id):
+    def get_all(cls):
         """
         Get all rows from this table.
         """

@@ -511,7 +511,7 @@ class Items(Models, AddressModelDecorator):
         self._is_featured = db_data["is_featured"]
         self.dt_created = db_data["dt_created"]
         self.is_locked = db_data["is_locked"]
-        self.is_routed = db_data["is_routed"]
+        self._is_routed = db_data["is_routed"]
         self.last_locked = db_data["last_locked"]
         self._lister_id = db_data["lister_id"]
         #address
@@ -531,6 +531,18 @@ class Items(Models, AddressModelDecorator):
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
         self._is_available = is_available
+
+    @property
+    def is_routed(self):
+        return self._is_routed
+
+    @is_routed.setter
+    def is_routed(self, is_routed):
+        SQL = f"UPDATE users SET is_routed = %s WHERE id = %s;" # Note: no quotes
+        data = (is_routed, self.id)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+        self._is_routed = is_routed
 
     @property
     def is_featured(self):
@@ -682,6 +694,38 @@ class Calendars(Models, ItemModelDecorator):
     def size(self):
         return len(self.reservations)
 
+    #for remove() and add(), you need to pass the specific res, bc no way to tell otherwise
+    def remove(self, reservation):
+        SQL = f"""
+            UPDATE reservations SET is_calendared = %s
+                WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
+        data = (False,
+            reservation.item_id,
+            reservation.user_id,
+            reservation.date_started,
+            reservation.date_ended)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+
+        #resetting self.contents
+        self._reservations = None
+
+    def add(self, reservation):
+        SQL = f"""
+            UPDATE reservations SET is_in_cart = %s, is_calendared = %s
+                WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
+        data = (False, True,
+            reservation.item_id,
+            reservation.user_id,
+            reservation.date_started,
+            reservation.date_ended)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+
+        #resetting self.contents
+        self._reservations = None
+
+
     #determining if an item is available day-by-day
     def check_availability(self, comparison_date=date.today()):
         if self.size() > 0:
@@ -763,30 +807,18 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
         self.user_id = db_data["renter_id"]
         self.dt_created = db_data["dt_created"]
 
-    def cost(self):
+    def print_total(self):
         """This is how much user must pay = charge + deposit"""
         return self._charge + self._deposit
 
-    def deposit(self):
+    def print_deposit(self):
         return f"${self._deposit:,.2f}"
 
-    def charge(self):
+    def print_charge(self):
         return f"${self._charge:,.2f}"
 
     def length(self):
         return (self.date_started - self.date_ended).days
-
-    #NOTE: is this convention good given that other bools do setter-getter?
-    def finalize(self):
-        if self.is_calendared == False:
-            reservation_keys = {
-                "date_started": self.date_started,
-                "date_ended": self.date_ended,
-                "renter_id": self.user_id,
-                "item_id": self.item_id}
-            changes = {"is_calendared": True}
-            Reservations.set(reservation_keys, changes)
-            self.refresh()
 
     def extend(self):
         if self.is_extended == False:

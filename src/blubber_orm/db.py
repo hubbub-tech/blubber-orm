@@ -4,6 +4,7 @@ from uritools import urisplit
 
 #postgres app commands: https://kb.objectrocket.com/postgresql/how-to-run-an-sql-file-in-postgres-846
 #postgres app website: https://postgresapp.com/documentation/cli-tools.html
+test_db_uri = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"
 
 def sql_to_dictionary(cursor, sql_query):
     to_dictionary = {}
@@ -28,6 +29,7 @@ def parse_uri(database_uri):
 #simple singleton design pattern
 class DatabaseConnection:
     _instance = None
+    _debug = None
     cursor = None
     connection = None
 
@@ -36,10 +38,12 @@ class DatabaseConnection:
             #TODO: log that this problem happened
             raise Exception("Database instance should only be created once.")
         else:
-            print("getting db")
+            DatabaseConnection._debug = DatabaseConnection.get_debug()
             DatabaseConnection.cursor, DatabaseConnection.connection = DatabaseConnection.get_db()
             DatabaseConnection._instance = self
-            print("got it", DatabaseConnection.cursor, DatabaseConnection.connection)
+            if DatabaseConnection._debug:
+                print("Database connection: ", DatabaseConnection.connection)
+                print("Database cursor: ", DatabaseConnection.cursor)
 
     @staticmethod
     def get_instance():
@@ -47,15 +51,27 @@ class DatabaseConnection:
             DatabaseConnection()
         return DatabaseConnection._instance
 
+    @staticmethod
+    def get_debug():
+        _debug = os.environ.get("BLUBBER_DEBUG", None)
+        if _debug == 1:
+            return True
+        elif _debug == 0:
+            return False
+        elif _debug is None:
+            print("BLUBBER_DEBUG config not found. Defaulting to False.")
+            return False
+        else:
+            raise Exception("ExportError: BLUBBER_DEBUG config must be either 0 or 1.")
+
     #returns a database connection by reading the uri from the environment
     @staticmethod
-    def get_db():
+    def get_db(debug=None):
         conn = None
         cur = None
-        print("starting")
         try:
             #build exception for when URI cannot be found in environment
-            database_uri = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"
+            database_uri = os.environ.get("DATABASE_URL", test_db_uri)
             credentials = parse_uri(database_uri)
         except AssertionError as not_postgres_error:
             #TODO: log error to file with traceback

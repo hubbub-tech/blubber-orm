@@ -229,6 +229,7 @@ class Users(Models, AddressModelDecorator):
     table_primaries = ["id"]
 
     _listings = None
+    _rentals = None
     _reviews = None
     _cart = None
     _profile = None
@@ -336,6 +337,14 @@ class Users(Models, AddressModelDecorator):
         return self._listings
 
     @property
+    def rentals(self):
+        if self._rentals is None:
+            credentials = {"renter_id": self.id}
+            orders = Orders.filter(credentials)
+            self._rentals = [order.reservation.item for order in orders]
+        return self._rentals
+
+    @property
     def reviews(self):
         if self._reviews is None:
             credentials = {"author_id": self.id}
@@ -355,6 +364,10 @@ class Users(Models, AddressModelDecorator):
             credentials = {"renter_id": self.id}
             self._reservations = Reservations.filter(credentials)
         return self._reservations
+
+    def make_username(self):
+        first, last = self._name.split(",")
+        return f"{first[:4]}{last[:4]}.{self.id}"
 
     def refresh(self):
         self = Users.get(self.id)

@@ -150,8 +150,7 @@ class Models(AbstractModels):
 
         if debug:
             print("SQL command: ", SQL)
-            print("Data: ", data)
-            print("Database cursor (fetch sample): ", cls.database.cursor.fethone())
+            print("Database cursor (fetch sample): ", cls.database.cursor.fetchone())
 
         obj_list = []
         for query in cls.database.cursor.fetchall():

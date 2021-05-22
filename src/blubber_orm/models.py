@@ -1229,17 +1229,17 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
 
 class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"
-    table_primaries = ["date_made", "user_id"]
+    table_primaries = ["date_created", "user_id"]
 
     def __init__(self, db_data):
-        self.date_made = db_data["date_made"]
+        self.date_created = db_data["date_created"]
         self.description = db_data["description"]
         self.user_id = db_data["user_id"]
 
     @classmethod
     def get(cls, testimonial_keys):
-        SQL = f"SELECT * FROM testimonials WHERE date_made = %s AND user_id = %s;" # Note: no quotes
-        data = (testimonial_keys["date_made"], testimonial_keys["user_id"])
+        SQL = f"SELECT * FROM testimonials WHERE date_created = %s AND user_id = %s;" # Note: no quotes
+        data = (testimonial_keys["date_created"], testimonial_keys["user_id"])
         cls.database.cursor.execute(SQL, data)
         db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_obj)
@@ -1250,14 +1250,14 @@ class Testimonials(Models, UserModelDecorator):
 
     @classmethod
     def delete(cls, testimonial_keys):
-        SQL = f"DELETE * FROM testimonials WHERE date_made = %s AND user_id = %s;" # Note: no quotes
-        data = (testimonial_keys["date_made"], testimonial_keys["user_id"])
+        SQL = f"DELETE * FROM testimonials WHERE date_created = %s AND user_id = %s;" # Note: no quotes
+        data = (testimonial_keys["date_created"], testimonial_keys["user_id"])
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()
 
     def refresh(self):
         testimonial_keys = {
-            "date_made": self.date_made,
+            "date_created": self.date_created,
             "user_id": self.user_id}
         self = Testimonials.get(testimonial_keys)
 

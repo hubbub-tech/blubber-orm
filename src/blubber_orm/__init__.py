@@ -1,6 +1,6 @@
 import os
 
-from .db import parse_uri
+from .models.db import parse_uri
 
 from .models import Addresses
 from .models import Users

@@ -1,7 +1,5 @@
 from .db import sql_to_dictionary
 from .base import Models
-from .items import ItemModelDecorator
-from .users import UserModelDecorator
 
 class ReservationModelDecorator:
     """
@@ -27,7 +25,7 @@ class ReservationModelDecorator:
             raise Exception("This class cannot inherit from the reservation decorator. No res keys provided.")
 
 
-class Reservations(Models, UserModelDecorator, ItemModelDecorator):
+class Reservations(Models):
     table_name = "reservations"
     table_primaries = ["date_started", "date_ended", "item_id", "renter_id"]
 
@@ -110,8 +108,8 @@ class Reservations(Models, UserModelDecorator, ItemModelDecorator):
             reservation_keys['renter_id'],
             reservation_keys['item_id'])
         cls.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
-        return cls(db_obj)
+        db_reservation = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        return Reservations(db_obj)
 
     @classmethod
     def delete(cls, reservation_keys):

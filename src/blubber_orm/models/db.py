@@ -54,9 +54,9 @@ class DatabaseConnection:
     @staticmethod
     def get_debug():
         _debug = os.environ.get("BLUBBER_DEBUG", None)
-        if _debug == 1:
+        if _debug == "1":
             return True
-        elif _debug == 0:
+        elif _debug == "0":
             return False
         elif _debug is None:
             print("BLUBBER_DEBUG config not found. Defaulting to False.")

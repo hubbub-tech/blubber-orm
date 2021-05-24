@@ -1,6 +1,6 @@
 from .db import sql_to_dictionary
 from .base import Models
-from .user import Users
+from .users import Users
 from .reservations import Reservations, ReservationModelDecorator
 
 class Orders(Models, ReservationModelDecorator):

@@ -1,7 +1,7 @@
 import pytz
 from datetime import datetime
 
-from .db import DatabaseConnection
+from .models.db import DatabaseConnection
 
 def _create_database():
     try:

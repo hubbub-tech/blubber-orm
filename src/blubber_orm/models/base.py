@@ -1,3 +1,5 @@
+import json
+from datetime import datetime, date
 from abc import ABC, abstractmethod
 from .db import DatabaseConnection, sql_to_dictionary
 
@@ -117,7 +119,7 @@ class Models(AbstractModels):
         if debug:
             print("SQL command: ", SQL)
             print("Data: ", data)
-            print("Database cursor: ", cls.database.cursor.fetchone())
+            print("Database cursor: ", cls.database.cursor)
 
         primary_key = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         if len(primary_key.keys()) == 1:
@@ -136,7 +138,7 @@ class Models(AbstractModels):
         if debug:
             print("SQL command: ", SQL)
             print("Data: ", data)
-            print("Database cursor: ", cls.database.cursor.fetchone())
+            print("Database cursor: ", cls.database.cursor)
 
         db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
         return cls(db_obj)
@@ -150,7 +152,7 @@ class Models(AbstractModels):
 
         if debug:
             print("SQL command: ", SQL)
-            print("Database cursor (fetch sample): ", cls.database.cursor.fetchone())
+            print("Database cursor (fetch sample): ", cls.database.cursor)
 
         obj_list = []
         for query in cls.database.cursor.fetchall():
@@ -187,7 +189,7 @@ class Models(AbstractModels):
         if debug:
             print("SQL command: ", SQL)
             print("Data: ", data)
-            print("Database cursor (fetch sample): ", cls.database.cursor.fetchone())
+            print("Database cursor (fetch sample): ", cls.database.cursor)
 
         obj_list = []
         for query in cls.database.cursor.fetchall():
@@ -244,9 +246,21 @@ class Models(AbstractModels):
                 print("Column names initialized as: ", cls.table_columns)
         return cls.table_columns
 
-    def refresh(self):
-        cls = type(self)
-        self = cls.get(self.id)
+    def to_dict(self, serializable=True):
+        _self_dict = self.__dict__
+        if serializable:
+            _serializable_dict = {}
+            for key, value in _self_dict.items():
+                if key[0] == "_":
+                    key = key[1:]
+                if type(value) == datetime:
+                    _serializable_dict[key] = value.strftime("%Y-%m-%d %H:%M:%S.%f")
+                elif type(value) == date:
+                    _serializable_dict[key] = value.strftime("%Y-%m-%d")
+                else:
+                    _serializable_dict[key] = value
+            _self_dict = _serializable_dict
+        return _self_dict
 
     def __repr__(self):
         model = self.table_name.capitalize()

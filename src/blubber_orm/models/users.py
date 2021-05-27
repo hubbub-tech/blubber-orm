@@ -25,13 +25,8 @@ class Users(Models, AddressModelDecorator):
     table_name = "users"
     table_primaries = ["id"]
 
-    _listings = None
-    _rentals = None
-    _reviews = None
     _cart = None
     _profile = None
-    _testimonials = None
-    _reservations = None
 
     def __init__(self, db_data):
         #attributes
@@ -129,6 +124,11 @@ class Users(Models, AddressModelDecorator):
     def make_username(self):
         first, last = self._name.split(",")
         return f"{first[:4]}{last[:4]}.{self.id}"
+
+    @classmethod
+    def get_by_username(cls, username):
+        _, id = username.split(".")
+        return Users.get(id)
 
     def refresh(self):
         self = Users.get(self.id)

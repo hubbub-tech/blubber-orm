@@ -28,5 +28,5 @@ def get_db():
     This is an object which contains the database connection, `.connection`, and
     a cursor for executing SQL queries, `.cursor`.
     """
-    from .db import DatabaseConnection
+    from .models.db import DatabaseConnection
     return DatabaseConnection.get_instance()

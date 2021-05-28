@@ -198,6 +198,25 @@ class Models(AbstractModels):
         return obj_list # query here
 
     @classmethod
+    def like(cls, attribute, key):
+        debug = cls.database._debug
+
+        SQL = f"SELECT * FROM {cls.table_name} WHERE {attribute} ILIKE %s;"
+        data = (key,)
+        cls.database.cursor.execute(SQL, data)
+
+        if debug:
+            print("SQL command: ", SQL)
+            print("Data: ", data)
+            print("Database cursor (fetch sample): ", cls.database.cursor)
+
+        obj_list = []
+        for query in cls.database.cursor.fetchall():
+            db_obj = sql_to_dictionary(cls.database.cursor, query)
+            obj_list.append(cls(db_obj))
+        return obj_list
+
+    @classmethod
     def delete(cls, id):
         debug = cls.database._debug
 

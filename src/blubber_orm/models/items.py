@@ -1,3 +1,4 @@
+import calendar as calpy
 from datetime import datetime, date, timedelta
 
 from .db import sql_to_dictionary
@@ -156,6 +157,18 @@ class Items(Models, AddressModelDecorator):
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
         self.refresh()
+
+    def add_tag(self, tag):
+        SQL = "INSERT INTO tagging (item_id, tag_name) VALUES (%s, %s);" #does this return a tuple or single value?
+        data = (self.id, tag.name) #sensitive to tuple order
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+
+    def remove_tag(self, tag):
+        SQL = "DELETE * FROM tagging WHERE item_id = %s AND tag_name = %s;" #does this return a tuple or single value?
+        data = (self.id, tag.name) #sensitive to tuple order
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
 
     def refresh(self):
         self = Items.get(self.id)
@@ -323,15 +336,29 @@ class Calendars(Models, ItemModelDecorator):
         else:
             return None
 
-    def get_booked_days(self, month):
-        booked_days = []
-        bookings = self.reservations
-        for res in bookings:
-            booked_day = res.date_stated
-            while booked_day.strftime("%m") == month:
-                booked_days.append(booked_day.strftime("%-d"))
-                booked_day += timedelta(days=1)
-        return booked_days
+    def get_booked_days(self, month, stripped=True):
+        if stripped:
+            booked_days = []
+            for res in self.reservations:
+                booked_day = res.date_stated
+                while booked_day.strftime("%m") == month:
+                    booked_days.append(booked_day.strftime("%-d"))
+                    booked_day += timedelta(days=1)
+            return booked_days
+        else:
+            year = date.today().strftime("%Y")
+            month = date.today().strftime("%-m")
+            first_day_of_week, days_in_month = calpy.monthrange(int(year), int(month))
+            _booked_days = item.calendar.get_booked_days(month)
+            days_in_month_list = [str(day) for day in range(1, days_in_month + 1)]
+
+            booked_days_unstripped = []
+            for day in days_in_month_list:
+                if day in _booked_days:
+                    booked_days_unstripped.append((day, True))
+                else:
+                    booked_days_unstripped.append((day, False))
+            return booked_days_unstripped
 
     def refresh(self):
         self = Calendars.get(self.item_id)

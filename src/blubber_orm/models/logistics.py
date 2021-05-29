@@ -74,16 +74,16 @@ class Pickups(Models):
     _logistics = None
 
     def __init__(self, db_data):
-        self.date_pickup = db_data["pickup_date"]
-        self._dt_sched = db_data["dt_sched"]
-        self._renter_id = db_data["renter_id"]
+        self.pickup_date = db_data["pickup_date"]
+        self.dt_scheduled = db_data["dt_sched"]
+        self.renter_id = db_data["renter_id"]
 
     @property
     def logistics(self):
         if self._logistics is None:
             keys = {
-                "dt_sched": self._dt_sched,
-                "renter_id": self._renter_id}
+                "dt_sched": self.dt_scheduled,
+                "renter_id": self.renter_id}
             self._logistics = Logistics.get(keys)
         return self._logistics
 
@@ -136,9 +136,20 @@ class Pickups(Models):
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()
 
+    def schedule_orders(self, orders):
+        #ASSERT takes a list
+        SQL = """
+            INSERT INTO order_pickups (order_id, pickup_date, renter_id, dt_sched)
+            VALUES (%s, %s, %s, %s);"""
+        for order in orders:
+            data = (order.id, self.pickup_date, self.dt_scheduled, self.renter_id)
+            self.database.cursor.execute(SQL, data)
+            self.database.connection.commit()
+            order.is_pickup_scheduled = True
+
     def refresh(self):
         pickup_keys = {
-            "pickup_date": self.date_pickup,
+            "pickup_date": self.pickup_date,
             "dt_sched": self.dt_scheduled,
             "renter_id": self.renter_id}
         self = Pickups.get(pickup_keys)
@@ -150,16 +161,16 @@ class Dropoffs(Models):
     _logistics = None
 
     def __init__(self, db_data):
-        self.date_dropoff = db_data["dropoff_date"]
-        self._dt_sched = db_data["dt_sched"]
-        self._renter_id = db_data["renter_id"]
+        self.dropoff_date = db_data["dropoff_date"]
+        self.dt_scheduled = db_data["dt_sched"]
+        self.renter_id = db_data["renter_id"]
 
     @property
     def logistics(self):
         if self._logistics is None:
             keys = {
-                "dt_sched": self._dt_sched,
-                "renter_id": self._renter_id}
+                "dt_sched": self.dt_scheduled,
+                "renter_id": self.renter_id}
             self._logistics = Logistics.get(keys)
         return self._logistics
 
@@ -212,9 +223,20 @@ class Dropoffs(Models):
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()
 
+    def schedule_orders(self, orders):
+        #ASSERT takes a list
+        SQL = """
+            INSERT INTO order_dropoffs (order_id, dropoff_date, renter_id, dt_sched)
+            VALUES (%s, %s, %s, %s);"""
+        for order in orders:
+            data = (order.id, self.dropoff_date, self.dt_scheduled, self.renter_id)
+            self.database.cursor.execute(SQL, data)
+            self.database.connection.commit()
+            order.is_dropoff_scheduled = True
+
     def refresh(self):
         dropoff_keys = {
-            "dropoff_date": self.date_dropoff,
+            "dropoff_date": self.dropoff_date,
             "dt_sched": self.dt_scheduled,
             "renter_id": self.renter_id}
         self = Dropoffs.get(dropoff_keys)

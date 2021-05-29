@@ -15,14 +15,38 @@ class Orders(Models, ReservationModelDecorator):
         self.id = db_data["id"] #primary key
         self.date_placed = db_data["date_placed"]
         self.is_online_pay = db_data["is_online_pay"]
-        self.is_dropoff_scheduled = db_data["is_dropoff_sched"]
-        self.is_pickup_scheduled = db_data["is_pick_sched"]
+        self._is_dropoff_scheduled = db_data["is_dropoff_sched"]
+        self._is_pickup_scheduled = db_data["is_pick_sched"]
         self._lister_id = db_data["lister_id"]
         #reservation
         self._res_date_started = db_data["res_date_start"]
         self._res_date_ended = db_data["res_date_end"]
         self._res_renter_id = db_data["renter_id"]
         self._res_item_id = db_data["item_id"]
+
+    @property
+    def is_dropoff_scheduled(self):
+        return self._is_dropoff_scheduled
+
+    @is_dropoff_scheduled.setter
+    def is_dropoff_scheduled(self, is_dropoff_scheduled):
+        SQL = "UPDATE orders SET is_dropoff_scheduled = %s WHERE id = %s;" # Note: no quotes
+        data = (is_dropoff_scheduled, self.id)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+        self._is_dropoff_scheduled = is_dropoff_scheduled
+
+    @property
+    def is_pickup_scheduled(self):
+        return self._is_pickup_scheduled
+
+    @is_pickup_scheduled.setter
+    def is_pickup_scheduled(self, is_pickup_scheduled):
+        SQL = "UPDATE orders SET is_pickup_scheduled = %s WHERE id = %s;" # Note: no quotes
+        data = (is_pickup_scheduled, self.id)
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+        self._is_pickup_scheduled = is_pickup_scheduled
 
     @property
     def extensions(self):

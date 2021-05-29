@@ -143,12 +143,12 @@ CREATE TABLE orders (
   date_placed date,
   is_online_pay boolean,
   is_dropoff_sched boolean DEFAULT FALSE,
+  is_pickup_sched boolean DEFAULT FALSE,
   renter_id integer,
   lister_id integer,
   item_id integer,
   res_date_start date,
   res_date_end date,
-  is_pickup_sched boolean DEFAULT FALSE,
   PRIMARY KEY (id),
   FOREIGN KEY (lister_id) REFERENCES listers (lister_id),
   FOREIGN KEY (res_date_start, res_date_end, renter_id, item_id) REFERENCES reservations (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE

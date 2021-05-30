@@ -26,6 +26,7 @@ class Orders(Models, ReservationModelDecorator):
     table_primaries = ["id"]
 
     _extensions = None
+    _ext_date_end = None
     _lister = None
 
     def __init__(self, db_data):
@@ -41,6 +42,16 @@ class Orders(Models, ReservationModelDecorator):
         self._res_date_end = db_data["res_date_end"]
         self._res_renter_id = db_data["renter_id"]
         self._res_item_id = db_data["item_id"]
+
+    @property
+    def ext_date_end(self):
+        extensions = self.extensions
+        if extensions:
+            extensions.sort(key = lambda ext: ext.res_date_end)
+            self._ext_date_end = extensions[-1].res_date_end
+        else:
+            self._ext_date_end = self._res_date_end
+        return self._ext_date_end
 
     @property
     def lister_id(self):

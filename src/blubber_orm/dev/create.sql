@@ -139,7 +139,7 @@ CREATE TABLE testimonials (
 );
 
 CREATE TABLE orders (
-  id integer,
+  id SERIAL,
   date_placed date,
   is_online_pay boolean,
   is_dropoff_sched boolean DEFAULT FALSE,
@@ -155,14 +155,13 @@ CREATE TABLE orders (
 );
 
 CREATE TABLE extensions (
-  res_date_start date,
-  res_date_end date,
-  renter_id integer,
-  item_id integer,
-  ext_charge float,
-  ext_date_end date CHECK (ext_date_end > res_date_end),
-  deposit float,
-  PRIMARY KEY (renter_id, item_id, ext_date_end),
+  order_id integer,
+  renter_id integer, --must be same as order renter_id
+  item_id integer, --must be same as order item_id
+  res_date_start date, --this must equal either order end date or end date of last extension
+  res_date_end date, --this is the extension end date
+  PRIMARY KEY (order_id, res_date_end),
+  FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
   FOREIGN KEY (res_date_start, res_date_end, renter_id, item_id) REFERENCES reservations (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE
 );
 

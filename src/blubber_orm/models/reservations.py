@@ -12,11 +12,11 @@ class ReservationModelDecorator:
     @property
     def reservation(self):
         model_class = type(self)
-        if "_res_date_started" in model_class.__dict__.keys(): #in reality it needs the other res keys too
+        if "_res_date_start" in model_class.__dict__.keys(): #in reality it needs the other res keys too
             if self._reservation is None:
                 reservation_keys = {
-                    "date_started": self._res_date_started,
-                    "date_ended": self._res_date_ended,
+                    "date_started": self._res_date_start,
+                    "date_ended": self._res_date_end,
                     "renter_id": self._res_renter_id,
                     "item_id": self._res_item_id}
                 self._reservation = Reservations.get(reservation_keys)
@@ -24,6 +24,21 @@ class ReservationModelDecorator:
         else:
             raise Exception("This class cannot inherit from the reservation decorator. No res keys provided.")
 
+    @property
+    def renter_id(self):
+        return self._res_renter_id
+
+    @property
+    def item_id(self):
+        return self._res_item_id
+
+    @property
+    def res_date_start(self):
+        return self._res_date_start
+
+    @property
+    def res_date_end(self):
+        return self._res_date_end
 
 class Reservations(Models):
     table_name = "reservations"
@@ -39,7 +54,7 @@ class Reservations(Models):
         self._charge = db_data["charge"]
         self._deposit = db_data["deposit"]
         self.item_id = db_data["item_id"]
-        self.user_id = db_data["renter_id"]
+        self.renter_id = db_data["renter_id"]
         self.dt_created = db_data["dt_created"]
 
     def print_total(self):
@@ -55,22 +70,11 @@ class Reservations(Models):
     def length(self):
         return (self.date_started - self.date_ended).days
 
-    def extend(self):
-        if self.is_extended == False:
-            reservation_keys = {
-                "date_started": self.date_started,
-                "date_ended": self.date_ended,
-                "renter_id": self.user_id,
-                "item_id": self.item_id}
-            changes = {"is_extended": True}
-            Reservations.set(reservation_keys, changes)
-            self.refresh()
-
     def refresh(self):
         reservation_keys = {
             "date_started": self.date_started,
             "date_ended": self.date_ended,
-            "renter_id": self.user_id,
+            "renter_id": self.renter_id,
             "item_id": self.item_id}
         self = Reservations.get(reservation_keys)
 

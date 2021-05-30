@@ -3,6 +3,24 @@ from .base import Models
 from .users import Users
 from .reservations import Reservations, ReservationModelDecorator
 
+class OrderModelDecorator:
+    """
+    A decorator on Models which provides access to the order linked by the foreign
+    key `order_id`.
+    """
+
+    _order = None
+
+    @property
+    def order(self):
+        model_class = type(self)
+        if "order_id" in model_class.__dict__.keys():
+            if self._order is None:
+                self._order = Orders.get(self.order_id)
+            return self._order
+        else:
+            raise Exception("This class cannot inherit from the order decorator. No order_id attribute.")
+
 class Orders(Models, ReservationModelDecorator):
     table_name = "orders"
     table_primaries = ["id"]
@@ -19,10 +37,14 @@ class Orders(Models, ReservationModelDecorator):
         self._is_pickup_scheduled = db_data["is_pick_sched"]
         self._lister_id = db_data["lister_id"]
         #reservation
-        self._res_date_started = db_data["res_date_start"]
-        self._res_date_ended = db_data["res_date_end"]
+        self._res_date_start = db_data["res_date_start"]
+        self._res_date_end = db_data["res_date_end"]
         self._res_renter_id = db_data["renter_id"]
         self._res_item_id = db_data["item_id"]
+
+    @property
+    def lister_id(self):
+        return self._lister_id
 
     @property
     def is_dropoff_scheduled(self):
@@ -50,14 +72,10 @@ class Orders(Models, ReservationModelDecorator):
 
     @property
     def extensions(self):
-        if self.reservation.is_extended:
-            if self._extensions is None:
-                filters = {"renter_id": self._res_renter_id, "item_id": self._res_item_id}
-                extensions = Extensions.filter(filters)
-                #TODO: sort extensions sequentially, most recent to oldest
-                self._extensions = extensions
-            return self._extensions
-        return None
+        if self._extensions is None:
+            extensions = Extensions.filter({"order_id": self.id})
+            self._extensions = extensions
+        return self._extensions
 
     @property
     def lister(self):
@@ -75,76 +93,48 @@ class Orders(Models, ReservationModelDecorator):
         return order
 
     @classmethod
-    def by_dropoff(cls, pickup):
+    def by_dropoff(cls, dropoff):
         SQL = "SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
-        data = (pickup.date_dropoff, pickup._dt_sched, pickup._renter_id)
+        data = (dropoff.date_dropoff, dropoff._dt_sched, dropoff._renter_id)
         cls.database.cursor.execute(SQL, data)
         db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
         order = Orders.get(db_obj["order_id"])
         return order
 
-class Extensions(Models, ReservationModelDecorator):
+class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
     table_name = "extensions"
-    table_primaries = ["ext_charge", "ext_date_end", "renter_id"]
+    table_primaries = ["order_id", "res_date_end"]
 
     def __init__(self, db_data):
-        #attributes
-        self.ext_charge = db_data["ext_charge"]
-        self._deposit = db_data["deposit"]
-        self.ext_date_end = db_data["ext_date_end"]
+        #order
+        self.order_id = db_data["order_id"]
         #reservation
-        self._res_date_started = db_data["res_date_start"]
-        self._res_date_ended = db_data["res_date_end"]
+        self._res_date_start = db_data["res_date_start"]
+        self._res_date_end = db_data["res_date_end"]
         self._res_renter_id = db_data["renter_id"]
         self._res_item_id = db_data["item_id"]
 
-    def price(self):
-        return f"${self.ext_charge:,.2f}"
-
-    def refresh(self):
-        extension_keys = {
-            "ext_charge": self.ext_charge,
-            "ext_date_end": self.ext_date_end,
-            "renter_id": self._res_renter_id}
-        self = Extensions.get(extension_keys)
-
-    @classmethod
-    def set(cls, extension_keys, changes):
-        targets = [f"{target} = %s" for target in changes.keys()]
-        targets_str = ", ".join(targets)
-        SQL = f"""
-            UPDATE extensions SET {targets_str}
-                WHERE ext_charge = %s AND ext_date_end = %s AND renter_id = %s;""" # Note: no quotes
-        updates = [value for value in changes.values()]
-        keys = [
-            extension_keys['ext_charge'],
-            extension_keys['ext_date_end'],
-            extension_keys['renter_id']]
-        data = tuple(updates + keys)
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
-
     @classmethod
     def get(cls, extension_keys):
-        SQL = """
-            SELECT * FROM extensions
-                WHERE ext_charge = %s AND ext_date_end = %s AND renter_id = %s;""" # Note: no quotes
-        data = (
-            extension_keys['ext_charge'],
-            extension_keys['ext_date_end'],
-            extension_keys['renter_id'])
+        SQL = "SELECT * FROM extensions WHERE order_id = %s AND res_date_end = %s;" # Note: no quotes
+        data = (extension_keys['order_id'], extension_keys['res_date_end'])
         cls.database.cursor.execute(SQL, data)
         db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
-        return cls(db_obj)
+        return Extensions(db_obj)
+
+    @classmethod
+    def set(cls):
+        raise Exception("Extensions are not directly editable. Edit its reservation or order instead.")
 
     @classmethod
     def delete(cls, extension_keys):
-        SQL = """
-            DELETE * FROM extensions
-                WHERE ext_charge = %s AND ext_date_end = %s AND renter_id = %s;""" # Note: no quotes
-        data = (
-            extension_keys['ext_charge'],
-            extension_keys['ext_date_end'],
-            extension_keys['renter_id'])
+        SQL = "DELETE * FROM extensions WHERE order_id = %s AND res_date_end = %s;"
+        data = (extension_keys['order_id'], extension_keys['res_date_end'])
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()
+
+    def refresh(self):
+        extension_keys = {
+            "order_id": self.order_id,
+            "res_date_end": self._res_date_end}
+        self = Extensions.get(extension_keys)

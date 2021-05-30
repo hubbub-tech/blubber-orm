@@ -268,7 +268,7 @@ class Carts(Models, UserModelDecorator):
                 WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
         data = (False,
             reservation.item_id,
-            reservation.user_id,
+            reservation.renter_id,
             reservation.date_started,
             reservation.date_ended)
         self.database.cursor.execute(SQL, data)
@@ -295,7 +295,7 @@ class Carts(Models, UserModelDecorator):
                 WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
         data = (True,
             reservation.item_id,
-            reservation.user_id,
+            reservation.renter_id,
             reservation.date_started,
             reservation.date_ended)
         self.database.cursor.execute(SQL, data)

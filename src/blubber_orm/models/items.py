@@ -243,14 +243,6 @@ class Calendars(Models, ItemModelDecorator):
             self._reservations = Reservations.filter(filters)
         return self._reservations
 
-    def extend(self, new_date_ended):
-        if new_date_ended > self.date_ended:
-            SQL = "UPDATE calendars SET date_ended = %s WHERE id = %s;" # Note: no quotes
-            data = (new_date_ended, self.item_id)
-            self.database.cursor.execute(SQL, data)
-            self.database.connection.commit()
-        self.refresh()
-
     def size(self):
         return len(self.reservations)
 
@@ -261,7 +253,7 @@ class Calendars(Models, ItemModelDecorator):
                 WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
         data = (False,
             reservation.item_id,
-            reservation.user_id,
+            reservation.renter_id,
             reservation.date_started,
             reservation.date_ended)
         self.database.cursor.execute(SQL, data)
@@ -276,7 +268,7 @@ class Calendars(Models, ItemModelDecorator):
                 WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
         data = (False, True,
             reservation.item_id,
-            reservation.user_id,
+            reservation.renter_id,
             reservation.date_started,
             reservation.date_ended)
         self.database.cursor.execute(SQL, data)

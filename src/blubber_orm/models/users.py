@@ -184,17 +184,19 @@ class Users(Models, AddressModelDecorator):
 
     def make_renter(self):
         #ASSERT user is not already in the renters table
-        SQL = "INSERT INTO renters (renter_id) VALUES (%s);"
-        data = (self.id, )
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        if Users.search_renter(self) == False:
+            SQL = "INSERT INTO renters (renter_id) VALUES (%s);"
+            data = (self.id, )
+            Users.database.cursor.execute(SQL, data)
+            Users.database.connection.commit()
 
     def make_lister(self):
         #ASSERT user is not already in the listers table
-        SQL = "INSERT INTO listers (lister_id) VALUES (%s);"
-        data = (self.id, )
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        if Users.search_lister(self) == False:
+            SQL = "INSERT INTO listers (lister_id) VALUES (%s);"
+            data = (self.id, )
+            Users.database.cursor.execute(SQL, data)
+            Users.database.connection.commit()
 
 #No setter-getter because this class is not important
 class Profiles(Models, UserModelDecorator):

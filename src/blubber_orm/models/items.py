@@ -46,7 +46,7 @@ class Items(Models, AddressModelDecorator):
         self.is_locked = db_data["is_locked"]
         self._is_routed = db_data["is_routed"]
         self.last_locked = db_data["last_locked"]
-        self._lister_id = db_data["lister_id"]
+        self.lister_id = db_data["lister_id"]
         #address
         self._address_num = db_data["address_num"]
         self._address_street = db_data["address_street"]

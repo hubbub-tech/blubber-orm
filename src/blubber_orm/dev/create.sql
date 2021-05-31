@@ -31,15 +31,15 @@ CREATE TABLE profiles (
   phone varchar(20),
   has_pic boolean DEFAULT FALSE,
   bio text,
-  id integer, /*user id*/
+  id integer, --user id
   PRIMARY KEY (id),
   FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE carts (
   total float DEFAULT 0.0,
-  total_deposit float DEFAULT 0.0, /* Ade 5/4 - needed a way to track deposits as well */
-  id integer, /* user id */
+  total_deposit float DEFAULT 0.0, -- Ade 5/4 - needed a way to track deposits as well
+  id integer, -- user id
   PRIMARY KEY (id),
   FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE
 );
@@ -69,7 +69,7 @@ CREATE TABLE details (
   weight integer,
   volume integer,
   description text,
-  id integer, /* item id */
+  id integer, -- item id
   PRIMARY KEY (id),
   FOREIGN KEY (id) REFERENCES items (id) ON DELETE CASCADE
 );
@@ -77,7 +77,7 @@ CREATE TABLE details (
 CREATE TABLE calendars (
   date_started date,
   date_ended date,
-  id integer, /* item id */
+  id integer, -- item id
   PRIMARY KEY (id),
   FOREIGN KEY (id) REFERENCES items (id) ON DELETE CASCADE
 );
@@ -87,22 +87,6 @@ CREATE TABLE shopping (
   item_id integer,
   PRIMARY KEY (cart_id, item_id),
   FOREIGN KEY (cart_id) REFERENCES carts (id) ON DELETE CASCADE,
-  FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
-);
-
-CREATE TABLE reservations (
-  date_started date,
-  date_ended date,
-  is_calendared boolean DEFAULT FALSE,
-  is_extended boolean DEFAULT FALSE,
-  is_in_cart boolean DEFAULT FALSE, /* ade 5/5 - needed to tell which res is in cart*/
-  charge float,
-  renter_id integer,
-  item_id integer,
-  deposit float,
-  dt_created timestamp,
-  PRIMARY KEY (date_started, date_ended, renter_id, item_id),
-  FOREIGN KEY (renter_id) REFERENCES users (id), ON DELETE CASCADE,
   FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
 );
 
@@ -117,6 +101,40 @@ CREATE TABLE renters (
   PRIMARY KEY (renter_id),
   FOREIGN KEY (renter_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+
+CREATE TABLE reservations (
+  date_started date,
+  date_ended date,
+  is_calendared boolean DEFAULT FALSE,
+  is_extended boolean DEFAULT FALSE,
+  is_in_cart boolean DEFAULT FALSE, -- ade 5/5 - needed to tell which res is in cart
+  charge float,
+  renter_id integer,
+  item_id integer,
+  deposit float,
+  dt_created timestamp,
+  PRIMARY KEY (date_started, date_ended, renter_id, item_id),
+  FOREIGN KEY (renter_id) REFERENCES users (id) ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
+);
+
+CREATE TABLE orders (
+  id SERIAL,
+  date_placed date,
+  is_online_pay boolean,
+  is_dropoff_sched boolean DEFAULT FALSE,
+  is_pickup_sched boolean DEFAULT FALSE,
+  lister_id integer,
+  item_id integer,
+  renter_id integer,
+  res_date_start date,
+  res_date_end date,
+  PRIMARY KEY (id),
+  FOREIGN KEY (lister_id) REFERENCES listers (lister_id),
+  FOREIGN KEY (res_date_start, res_date_end, renter_id, item_id) REFERENCES reservations (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE
+);
+
 
 CREATE TABLE reviews (
   id SERIAL,
@@ -136,22 +154,6 @@ CREATE TABLE testimonials (
   user_id integer,
   PRIMARY KEY (user_id, date_created),
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
-
-CREATE TABLE orders (
-  id SERIAL,
-  date_placed date,
-  is_online_pay boolean,
-  is_dropoff_sched boolean DEFAULT FALSE,
-  is_pickup_sched boolean DEFAULT FALSE,
-  lister_id integer,
-  item_id integer,
-  renter_id integer,
-  res_date_start date,
-  res_date_end date,
-  PRIMARY KEY (id),
-  FOREIGN KEY (lister_id) REFERENCES listers (lister_id),
-  FOREIGN KEY (res_date_start, res_date_end, renter_id, item_id) REFERENCES reservations (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE
 );
 
 CREATE TABLE extensions (
@@ -231,5 +233,5 @@ CREATE TABLE order_dropoffs (
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
   FOREIGN KEY (dropoff_date, dt_sched, renter_id) REFERENCES dropoffs (dropoff_date, dt_sched, renter_id) ON DELETE CASCADE
 );
-/* needed to drop the following--see data migration notes - caro 5/4 */
-/* ALTER TABLE extensions ADD CONSTRAINT chk_ext_date CHECK (ext_date_end > localtimestamp); */
+-- needed to drop the following--see data migration notes - caro 5/4
+-- ALTER TABLE extensions ADD CONSTRAINT chk_ext_date CHECK (ext_date_end > localtimestamp);

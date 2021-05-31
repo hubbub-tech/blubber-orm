@@ -19,8 +19,9 @@ from .models import Tags
 from .models import Reviews
 from .models import Testimonials
 
+from .ops import *
+
 #WARNING: these functions will edit whichever DB is linked in the environment...
-from .queries import _create_database, _destroy_database
 
 def get_db():
     """

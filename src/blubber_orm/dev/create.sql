@@ -14,7 +14,7 @@ CREATE TABLE users (
   id SERIAL,
   name varchar(100),
   email text UNIQUE,
-  password varchar(100),
+  password varchar(200),
   payment varchar(50),
   dt_joined timestamp DEFAULT LOCALTIMESTAMP,
   dt_last_active timestamp DEFAULT LOCALTIMESTAMP,

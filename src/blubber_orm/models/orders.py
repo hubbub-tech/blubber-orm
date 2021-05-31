@@ -112,6 +112,29 @@ class Orders(Models, ReservationModelDecorator):
         order = Orders.get(db_obj["order_id"])
         return order
 
+    def early_return(self, early_return_reservation):
+        #NOTE: the order also should not have extensions attached to it
+        return_err = "Early returns must be earlier than the current return date."
+        assert early_return_reservation.date_ended < self.res_date_end, return_err
+
+        item_err = "The reservation is not tied to the same object."
+        assert early_return_reservation.item_id == self.item_id, item_err
+
+        renter_err = "The reservation is not tied to the same renter."
+        assert early_return_reservation.renter_id == self.renter_id, renter_err
+
+        SQL = """UPDATE orders
+            SET is_pickup_scheduled = %s, res_date_start = %s, res_date_end = %s,
+            WHERE id = %s;"""
+        data = (
+            False,
+            early_return_reservation.date_started,
+            early_return_reservation.date_ended,
+            self.id
+        )
+        self.database.cursor.execute(SQL, data)
+        self.database.connection.commit()
+
 class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
     table_name = "extensions"
     table_primaries = ["order_id", "res_date_end"]

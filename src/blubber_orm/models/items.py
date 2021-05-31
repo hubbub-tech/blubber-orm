@@ -13,6 +13,7 @@ class ItemModelDecorator:
     """
 
     _item = None
+    item_id = None
 
     @property
     def item(self):
@@ -31,6 +32,11 @@ class Items(Models, AddressModelDecorator):
     _lister = None
     _details = None
     _calendar = None
+
+    _address_num = None
+    _address_street = None
+    _address_apt = None
+    _address_zip = None
 
     def __init__(self, db_data):
         #attributes
@@ -177,6 +183,8 @@ class Details(Models, ItemModelDecorator):
     table_name = "details"
     table_primaries = ["id"]
 
+    item_id = None
+
     def __init__(self, db_data):
         #attributes
         self.item_id = db_data["id"]
@@ -228,6 +236,7 @@ class Calendars(Models, ItemModelDecorator):
     table_primaries = ["id"]
 
     _reservations = None
+    item_id = None
 
     def __init__(self, db_data):
         self.item_id = db_data["id"]

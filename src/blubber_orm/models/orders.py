@@ -29,6 +29,11 @@ class Orders(Models, ReservationModelDecorator):
     _ext_date_end = None
     _lister = None
 
+    _res_date_start = None
+    _res_date_end = None
+    _res_renter_id = None
+    _res_item_id = None
+
     def __init__(self, db_data):
         #attributes
         self.id = db_data["id"] #primary key
@@ -136,8 +141,15 @@ class Orders(Models, ReservationModelDecorator):
         self.database.connection.commit()
 
 class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
+
     table_name = "extensions"
     table_primaries = ["order_id", "res_date_end"]
+
+    _res_date_start = None
+    _res_date_end = None
+    _res_renter_id = None
+    _res_item_id = None
+    order_id = None
 
     def __init__(self, db_data):
         #order

@@ -28,6 +28,11 @@ class Users(Models, AddressModelDecorator):
     _cart = None
     _profile = None
 
+    _address_num = None
+    _address_street = None
+    _address_apt = None
+    _address_zip = None
+
     def __init__(self, db_data):
         #attributes
         self.id = db_data["id"] #primary key
@@ -200,8 +205,11 @@ class Users(Models, AddressModelDecorator):
 
 #No setter-getter because this class is not important
 class Profiles(Models, UserModelDecorator):
+
     table_name = "profiles"
     table_primaries = ["id"]
+
+    user_id = None
 
     def __init__(self, db_data):
         self.user_id = db_data["id"]
@@ -218,6 +226,7 @@ class Carts(Models, UserModelDecorator):
     table_primaries = ["id"]
 
     _contents = None
+    user_id = None
 
     def __init__(self, db_data):
         #attributes

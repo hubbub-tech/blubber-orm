@@ -15,6 +15,11 @@ class Logistics(Models, AddressModelDecorator):
 
     _renter = None
 
+    _address_num = None
+    _address_street = None
+    _address_apt = None
+    _address_zip = None
+
     def __init__(self, db_data):
         #attributes
         self.dt_scheduled = db_data["dt_sched"]

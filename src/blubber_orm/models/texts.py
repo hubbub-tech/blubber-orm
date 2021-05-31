@@ -7,6 +7,9 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
     table_name = "reviews"
     table_primaries = ["id"]
 
+    user_id = None
+    item_id = None
+
     def __init__(self, db_data):
         #attributes
         self.id = db_data["id"]
@@ -43,6 +46,8 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
 class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"
     table_primaries = ["date_created", "user_id"]
+
+    user_id = None
 
     def __init__(self, db_data):
         self.date_created = db_data["date_created"]

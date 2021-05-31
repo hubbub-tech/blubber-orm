@@ -14,6 +14,7 @@ from .models import Orders
 from .models import Extensions
 from .models import Pickups
 from .models import Dropoffs
+from .models import Logistics
 from .models import Tags
 from .models import Reviews
 from .models import Testimonials

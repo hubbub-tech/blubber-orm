@@ -100,10 +100,10 @@ class Tags(Models):
     @classmethod
     def get(cls, tag_name):
         SQL = "SELECT * FROM tags WHERE tag_name = %s;" # Note: no quotes
-        data = (testimonial_keys["tag_name"])
+        data = (tag_name, )
         cls.database.cursor.execute(SQL, data)
         db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
-        return cls(db_obj)
+        return Tags(db_obj)
 
     @classmethod
     def set(cls):

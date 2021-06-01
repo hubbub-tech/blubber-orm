@@ -168,7 +168,7 @@ class Users(Models, AddressModelDecorator):
         return users
 
     @classmethod
-    def search_renter(user):
+    def search_renter(cls, user):
         SQL = "SELECT * FROM renters WHERE renter_id = %s;" # Note: no quotes
         data = (user.id, )
         cls.database.cursor.execute(SQL, data)
@@ -178,7 +178,7 @@ class Users(Models, AddressModelDecorator):
             return False
 
     @classmethod
-    def search_lister(user):
+    def search_lister(cls, user):
         SQL = "SELECT * FROM listers WHERE lister_id = %s;" # Note: no quotes
         data = (user.id, )
         cls.database.cursor.execute(SQL, data)

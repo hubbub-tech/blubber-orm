@@ -21,6 +21,12 @@ street_suffixes = ["Street", "Road", "Avenue", "Way", "Lane"]
 items = ["TV", "Meaty Claws", "Clarinet", "Squeaky Boots", "One Rock", "Pineapple",
     "Computer", "Lasso", "1000lbs Weights", "Pom-Poms", "iClicker"]
 
+tags = ["all", "kitchen", "electronics", "home", "fitness", "summer", "spring", "winter", "fall"]
+
+def generate_tag():
+    tag = random.choice(tags)
+    return {"tag_name": tag}
+
 def generate_identity():
     firstname = random.choice(firstnames)
     lastname = random.choice(lastnames)

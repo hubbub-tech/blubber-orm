@@ -131,6 +131,30 @@ class Users(Models, AddressModelDecorator):
         return f"{first[:4]}{last[:4]}.{self.id}"
 
     @classmethod
+    def get_all_listers(cls):
+        SQL = f"SELECT * FROM listers;"
+        cls.database.cursor.execute(SQL)
+
+        listers = []
+        for query in cls.database.cursor.fetchall():
+            db_lister = sql_to_dictionary(cls.database.cursor, query)
+            lister = Users.get(db_lister["id"])
+            listers.append(lister)
+        return listers
+
+    @classmethod
+    def get_all_renters(cls):
+        SQL = f"SELECT * FROM renters;"
+        cls.database.cursor.execute(SQL)
+
+        renters = []
+        for query in cls.database.cursor.fetchall():
+            db_renter = sql_to_dictionary(cls.database.cursor, query)
+            renter = Users.get(db_renter["id"])
+            renters.append(renter)
+        return renters
+
+    @classmethod
     def get_by_username(cls, username):
         _, id = username.split(".")
         return Users.get(id)

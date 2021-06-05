@@ -96,6 +96,10 @@ class Items(Models, AddressModelDecorator):
         self._is_featured = is_featured
 
     @property
+    def price(self):
+        return self._price
+
+    @property
     def details(self):
         if self._details is None:
             self._details = Details.get(self.id)

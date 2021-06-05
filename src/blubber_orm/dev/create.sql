@@ -113,7 +113,7 @@ CREATE TABLE reservations (
   renter_id integer,
   item_id integer,
   deposit float,
-  dt_created timestamp,
+  dt_created timestamp DEFAULT LOCALTIMESTAMP,
   PRIMARY KEY (date_started, date_ended, renter_id, item_id),
   FOREIGN KEY (renter_id) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE

@@ -113,7 +113,7 @@ class Reservations(Models):
             reservation_keys['item_id'])
         cls.database.cursor.execute(SQL, data)
         db_reservation = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
-        return Reservations(db_obj)
+        return Reservations(db_reservation)
 
     @classmethod
     def delete(cls, reservation_keys):

@@ -314,7 +314,7 @@ class Carts(Models, UserModelDecorator):
 
     def add(self, reservation):
         #ASSERT reservation.item_id is NOT associated with cart_id
-        SQL = "INSERT INTO shopping (user_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
+        SQL = "INSERT INTO shopping (cart_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.user_id, reservation.item_id) #sensitive to tuple order
         self.database.cursor.execute(SQL, data)
 
@@ -342,7 +342,7 @@ class Carts(Models, UserModelDecorator):
     def remove_without_reservation(self, item):
         """This is a non-commital add to cart where the user doesn't have to reserve immediately."""
         #ASSERT reservation.item_id is NOT associated with cart_id
-        SQL = "INSERT INTO shopping (user_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
+        SQL = "INSERT INTO shopping (cart_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.user_id, item.id) #sensitive to tuple order
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
@@ -351,7 +351,7 @@ class Carts(Models, UserModelDecorator):
     def add_without_reservation(self, item):
         """This resolves the non-commital 'add to cart' where the user didn't reserve."""
         #ASSERT reservation.item_id is NOT associated with cart_id
-        SQL = "INSERT INTO shopping (user_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
+        SQL = "INSERT INTO shopping (cart_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.user_id, item.id) #sensitive to tuple order
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()

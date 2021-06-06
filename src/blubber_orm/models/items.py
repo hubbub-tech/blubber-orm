@@ -126,7 +126,7 @@ class Items(Models, AddressModelDecorator):
         for query in cls.database.cursor.fetchall():
             db_item = sql_to_dictionary(cls.database.cursor, query)
             items.append(Items(db_item))
-        return users
+        return items
 
     @classmethod
     def by_zip(cls, zip_code):

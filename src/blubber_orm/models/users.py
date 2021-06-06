@@ -356,6 +356,13 @@ class Carts(Models, UserModelDecorator):
         self.database.cursor.execute(SQL, data)
         self.database.connection.commit()
 
+    def contains(self, item):
+        """Check if the cart contains this item."""
+        return Carts.does_row_exist({
+                "cart_id": self.user_id,
+                "item_id": item.id
+            }, table="shopping")
+
     def get_reserved_contents(self):
         SQL = """
             SELECT item_id FROM reservations

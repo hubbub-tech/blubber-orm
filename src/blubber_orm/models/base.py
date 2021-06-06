@@ -256,6 +256,7 @@ class Models(AbstractModels):
     @classmethod
     def _get_columns(cls):
         debug = cls.database._debug
+
         if cls.table_columns is None:
             cls.database.cursor.execute(f"SELECT * FROM {cls.table_name} LIMIT 0")
             columns = [attribute.name for attribute in cls.database.cursor.description]
@@ -280,6 +281,25 @@ class Models(AbstractModels):
                     _serializable_dict[key] = value
             _self_dict = _serializable_dict
         return _self_dict
+
+    @classmethod
+    def does_row_exist(cls, details, table=None):
+        debug = cls.database._debug
+
+        conditions = [f"{detail} = %s" for detail in details.keys()]
+        conditions_str = " AND ".join(conditions)
+        if table is None:
+            table = cls.table_name
+        SQL = f"SELECT * FROM {table} WHERE {conditions_str};"
+        data = tuple([detail for detail in details.values()])
+        cls.database.cursor.execute(SQL, data)
+
+        if debug:
+            print("SQL command: ", SQL)
+            print("Data: ", data)
+            print("Database cursor (fetch sample): ", cls.database.cursor)
+
+        return cls.database.cursor.fetchone() is not None
 
     def __repr__(self):
         model = self.table_name.capitalize()

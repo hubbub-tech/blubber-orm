@@ -9,24 +9,17 @@ class UserModelDecorator:
     key `user_id`.
     """
 
-    _user = None
-
     @property
     def user(self):
         model_class = type(self)
         if "user_id" in model_class.__dict__.keys():
-            if self._user is None:
-                self._user = Users.get(self.user_id)
-            return self._user
+            return Users.get(self.user_id)
         else:
             raise Exception("This class cannot inherit from the user decorator. No user_id attribute.")
 
 class Users(Models, AddressModelDecorator):
     table_name = "users"
     table_primaries = ["id"]
-
-    _cart = None
-    _profile = None
 
     _address_num = None
     _address_street = None
@@ -111,15 +104,11 @@ class Users(Models, AddressModelDecorator):
 
     @property
     def cart(self):
-        if self._cart is None:
-            self._cart = Carts.get(self.id)
-        return self._cart
+        return Carts.get(self.id)
 
     @property
     def profile(self):
-        if self._profile is None:
-            self._profile = Profiles.get(self.id)
-        return self._profile
+        return Profiles.get(self.id)
 
     @property
     def name(self):
@@ -224,16 +213,16 @@ class Users(Models, AddressModelDecorator):
         if Users.search_renter(self) == False:
             SQL = "INSERT INTO renters (renter_id) VALUES (%s);"
             data = (self.id, )
-            Users.database.cursor.execute(SQL, data)
-            Users.database.connection.commit()
+            Models.database.cursor.execute(SQL, data)
+            Models.database.connection.commit()
 
     def make_lister(self):
         #ASSERT user is not already in the listers table
         if Users.search_lister(self) == False:
             SQL = "INSERT INTO listers (lister_id) VALUES (%s);"
             data = (self.id, )
-            Users.database.cursor.execute(SQL, data)
-            Users.database.connection.commit()
+            Models.database.cursor.execute(SQL, data)
+            Models.database.connection.commit()
 
 #No setter-getter because this class is not important
 class Profiles(Models, UserModelDecorator):
@@ -285,15 +274,13 @@ class Carts(Models, UserModelDecorator):
 
     @property
     def contents(self):
-        if self._contents is None:
-            SQL = "SELECT item_id FROM shopping WHERE cart_id = %s;" #does this return a tuple or single value?
-            data = (self.user_id, )
-            Models.database.cursor.execute(SQL, data)
-            items = []
-            for id in Models.database.cursor.fetchall():
-                items.append(Items.get(id))
-            self._contents = items
-        return self._contents
+        SQL = "SELECT item_id FROM shopping WHERE cart_id = %s;" #does this return a tuple or single value?
+        data = (self.user_id, )
+        Models.database.cursor.execute(SQL, data)
+        items = []
+        for id in Models.database.cursor.fetchall():
+            items.append(Items.get(id))
+        return items
 
     #for remove() and add(), you need to pass the specific res, bc no way to tell otherwise
     def remove(self, reservation):

@@ -68,7 +68,7 @@ class Testimonials(Models, UserModelDecorator):
 
     @classmethod
     def delete(cls, testimonial_keys):
-        SQL = "DELETE * FROM testimonials WHERE date_created = %s AND user_id = %s;" # Note: no quotes
+        SQL = "DELETE FROM testimonials WHERE date_created = %s AND user_id = %s;" # Note: no quotes
         data = (testimonial_keys["date_created"], testimonial_keys["user_id"])
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()
@@ -115,7 +115,7 @@ class Tags(Models):
 
     @classmethod
     def delete(cls, name):
-        SQL = "DELETE * FROM tags WHERE tag_name = %s;" # Note: no quotes
+        SQL = "DELETE FROM tags WHERE tag_name = %s;" # Note: no quotes
         data = (name, )
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()

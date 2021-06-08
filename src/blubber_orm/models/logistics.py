@@ -57,7 +57,7 @@ class Logistics(Models, AddressModelDecorator):
 
     @classmethod
     def delete(cls, logistics_keys):
-        SQL = "DELETE * FROM logistics WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
+        SQL = "DELETE FROM logistics WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (logistics_keys['dt_sched'], logistics_keys['renter_id'])
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()
@@ -126,7 +126,7 @@ class Pickups(Models):
 
     @classmethod
     def delete(cls, pickup_keys):
-        SQL = f"DELETE * FROM pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        SQL = f"DELETE FROM pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
         data = (pickup_keys["pickup_date"], pickup_keys["dt_sched"], pickup_keys["renter_id"])
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()
@@ -207,7 +207,7 @@ class Dropoffs(Models):
 
     @classmethod
     def delete(cls, dropoff_keys):
-        SQL = f"DELETE * FROM dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        SQL = f"DELETE FROM dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
         data = (dropoff_keys["dropoff_date"], dropoff_keys["dt_sched"], dropoff_keys["renter_id"])
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()

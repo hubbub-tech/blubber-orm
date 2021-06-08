@@ -164,7 +164,7 @@ class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
 
     @classmethod
     def delete(cls, extension_keys):
-        SQL = "DELETE * FROM extensions WHERE order_id = %s AND res_date_end = %s;"
+        SQL = "DELETE FROM extensions WHERE order_id = %s AND res_date_end = %s;"
         data = (extension_keys['order_id'], extension_keys['res_date_end'])
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()

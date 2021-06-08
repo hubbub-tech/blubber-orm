@@ -180,7 +180,7 @@ class Items(Models, AddressModelDecorator):
         Models.database.connection.commit()
 
     def remove_tag(self, tag):
-        SQL = "DELETE * FROM tagging WHERE item_id = %s AND tag_name = %s;" #does this return a tuple or single value?
+        SQL = "DELETE FROM tagging WHERE item_id = %s AND tag_name = %s;" #does this return a tuple or single value?
         data = (self.id, tag.name) #sensitive to tuple order
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()

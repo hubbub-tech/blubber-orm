@@ -1,4 +1,4 @@
-from .db import sql_to_dictionary
+DELETEfrom .db import sql_to_dictionary
 from .base import Models
 from .addresses import AddressModelDecorator
 from .items import Items #for carts
@@ -285,7 +285,7 @@ class Carts(Models, UserModelDecorator):
     #for remove() and add(), you need to pass the specific res, bc no way to tell otherwise
     def remove(self, reservation):
         #ASSERT reservation.item_id is associated with cart_id
-        SQL = "DELETE * FROM shopping WHERE cart_id = %s AND item_id = %s;" #does this return a tuple or single value?
+        SQL = "DELETE FROM shopping WHERE cart_id = %s AND item_id = %s;" #does this return a tuple or single value?
         data = (self.user_id, reservation.item_id)
         Models.database.cursor.execute(SQL, data)
         self._total -= reservation._charge
@@ -338,7 +338,7 @@ class Carts(Models, UserModelDecorator):
     def remove_without_reservation(self, item):
         """This is a non-commital add to cart where the user doesn't have to reserve immediately."""
         #ASSERT reservation.item_id is NOT associated with cart_id
-        SQL = "INSERT INTO shopping (cart_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
+        SQL = "DELETE FROM shopping WHERE cart_id = %s AND item_id = %s;" #does this return a tuple or single value?
         data = (self.user_id, item.id) #sensitive to tuple order
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()

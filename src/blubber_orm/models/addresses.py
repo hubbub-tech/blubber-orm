@@ -70,7 +70,7 @@ class Addresses(Models):
     @classmethod
     def delete(cls, address_keys):
         SQL = """
-            DELETE * FROM addresses
+            DELETE FROM addresses
                 WHERE num = %s AND street = %s AND apt = %s AND zip = %s;""" # Note: no quotes
         data = (
             address_keys['num'],

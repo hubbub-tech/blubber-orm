@@ -114,7 +114,7 @@ class Reservations(Models):
     @classmethod
     def delete(cls, reservation_keys):
         SQL = """
-            DELETE * FROM reservations
+            DELETE FROM reservations
                 WHERE date_started = %s
                 AND date_ended = %s
                 AND renter_id = %s

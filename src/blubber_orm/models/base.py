@@ -220,7 +220,7 @@ class Models(AbstractModels):
     def delete(cls, id):
         debug = cls.database._debug
 
-        SQL = f"DELETE * FROM {cls.table_name} WHERE id = %s;" # Note: no quotes
+        SQL = f"DELETE FROM {cls.table_name} WHERE id = %s;" # Note: no quotes
         data = (id, )
         cls.database.cursor.execute(SQL, data)
         cls.database.connection.commit()

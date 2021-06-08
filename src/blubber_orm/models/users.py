@@ -57,8 +57,8 @@ class Users(Models, AddressModelDecorator):
     def email(self, email):
         SQL = "UPDATE users SET email = %s WHERE id = %s;" # Note: no quotes
         data = (email, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self._email = email
 
     @property
@@ -69,8 +69,8 @@ class Users(Models, AddressModelDecorator):
     def password(self, hashed_password):
         SQL = "UPDATE users SET password = %s WHERE id = %s;" # Note: no quotes
         data = (hashed_password, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self._password = hashed_password
 
     @property
@@ -81,8 +81,8 @@ class Users(Models, AddressModelDecorator):
     def payment(self, email):
         SQL = "UPDATE users SET payment = %s WHERE id = %s;" # Note: no quotes
         data = (payment, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self._payment = payment
 
     @property
@@ -93,8 +93,8 @@ class Users(Models, AddressModelDecorator):
     def dt_last_active(self, dt_last_active):
         SQL = "UPDATE users SET dt_last_active = %s WHERE id = %s;" # Note: no quotes
         data = (dt_last_active, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self._dt_last_active = dt_last_active
 
     @property
@@ -105,8 +105,8 @@ class Users(Models, AddressModelDecorator):
     def is_blocked(self, is_blocked):
         SQL = "UPDATE users SET is_blocked = %s WHERE id = %s;" # Note: no quotes
         data = (is_blocked, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self._is_blocked = is_blocked
 
     @property
@@ -136,8 +136,12 @@ class Users(Models, AddressModelDecorator):
         cls.database.cursor.execute(SQL)
 
         listers = []
+        db_lister_ids = []
         for query in cls.database.cursor.fetchall():
             db_lister = sql_to_dictionary(cls.database.cursor, query)
+            db_lister_ids.append(db_lister)
+
+        for db_lister in db_lister_ids:
             lister = Users.get(db_lister["id"])
             listers.append(lister)
         return listers
@@ -148,8 +152,12 @@ class Users(Models, AddressModelDecorator):
         cls.database.cursor.execute(SQL)
 
         renters = []
+        db_renter_ids = []
         for query in cls.database.cursor.fetchall():
             db_renter = sql_to_dictionary(cls.database.cursor, query)
+            db_renter_ids.append(db_renter)
+
+        for db_renter in db_renter_ids:
             renter = Users.get(db_renter["id"])
             renters.append(renter)
         return renters
@@ -264,7 +272,8 @@ class Carts(Models, UserModelDecorator):
         data = (item.id, )
         cls.database.cursor.execute(SQL, data)
         carts = []
-        for id in cls.database.cursor.fetchall():
+        db_cart_ids = [id for id in cls.database.cursor.fetchall()]
+        for id in db_cart_ids:
             carts.append(Carts.get(id))
         return carts
 
@@ -279,9 +288,9 @@ class Carts(Models, UserModelDecorator):
         if self._contents is None:
             SQL = "SELECT item_id FROM shopping WHERE cart_id = %s;" #does this return a tuple or single value?
             data = (self.user_id, )
-            self.database.cursor.execute(SQL, data)
+            Models.database.cursor.execute(SQL, data)
             items = []
-            for id in self.database.cursor.fetchall():
+            for id in Models.database.cursor.fetchall():
                 items.append(Items.get(id))
             self._contents = items
         return self._contents
@@ -291,12 +300,12 @@ class Carts(Models, UserModelDecorator):
         #ASSERT reservation.item_id is associated with cart_id
         SQL = "DELETE * FROM shopping WHERE cart_id = %s AND item_id = %s;" #does this return a tuple or single value?
         data = (self.user_id, reservation.item_id)
-        self.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
         self._total -= reservation._charge
         self._total_deposit -= reservation._deposit
         SQL = "UPDATE carts SET total = %s WHERE id = %s;"
         data = (self._total, self.user_id)
-        self.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
 
         SQL = """
             UPDATE reservations SET is_in_cart = %s
@@ -306,8 +315,8 @@ class Carts(Models, UserModelDecorator):
             reservation.renter_id,
             reservation.date_started,
             reservation.date_ended)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
         #resetting self.contents
         self._contents = None
@@ -316,14 +325,14 @@ class Carts(Models, UserModelDecorator):
         #ASSERT reservation.item_id is NOT associated with cart_id
         SQL = "INSERT INTO shopping (cart_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.user_id, reservation.item_id) #sensitive to tuple order
-        self.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
 
         self._total += reservation._charge
         self._total_deposit += reservation._deposit
 
         SQL = "UPDATE carts SET total = %s WHERE id = %s;"
         data = (self._total, self.user_id)
-        self.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
 
         SQL = """
             UPDATE reservations SET is_in_cart = %s
@@ -333,8 +342,8 @@ class Carts(Models, UserModelDecorator):
             reservation.renter_id,
             reservation.date_started,
             reservation.date_ended)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
         #resetting self.contents
         self._contents = None
@@ -344,8 +353,8 @@ class Carts(Models, UserModelDecorator):
         #ASSERT reservation.item_id is NOT associated with cart_id
         SQL = "INSERT INTO shopping (cart_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.user_id, item.id) #sensitive to tuple order
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     #NOTE to add a reservation to this later, "remove_without_reservation()" then re-add with "add()"
     def add_without_reservation(self, item):
@@ -353,8 +362,8 @@ class Carts(Models, UserModelDecorator):
         #ASSERT reservation.item_id is NOT associated with cart_id
         SQL = "INSERT INTO shopping (cart_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.user_id, item.id) #sensitive to tuple order
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     def contains(self, item):
         """Check if the cart contains this item."""
@@ -368,9 +377,9 @@ class Carts(Models, UserModelDecorator):
             SELECT item_id FROM reservations
                 WHERE is_in_cart = %s AND renter_id = %s AND is_calendared = %s;""" #does this return a tuple or single value?
         data = (True, self.user_id, False)
-        self.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
         items = []
-        for id in self.database.cursor.fetchall():
+        for id in Models.database.cursor.fetchall():
             items.append(Items.get(id))
         return items
 

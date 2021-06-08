@@ -273,9 +273,9 @@ class Models(AbstractModels):
             for key, value in _self_dict.items():
                 if key[0] == "_":
                     key = key[1:]
-                if type(value) == datetime:
+                if isinstance(value, datetime):
                     _serializable_dict[key] = value.strftime("%Y-%m-%d %H:%M:%S.%f")
-                elif type(value) == date:
+                elif isinstance(value, date):
                     _serializable_dict[key] = value.strftime("%Y-%m-%d")
                 else:
                     _serializable_dict[key] = value

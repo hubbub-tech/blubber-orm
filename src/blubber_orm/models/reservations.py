@@ -7,20 +7,16 @@ class ReservationModelDecorator:
     keys for `reservations`.
     """
 
-    _reservation = None
-
     @property
     def reservation(self):
         model_class = type(self)
         if "_res_date_start" in model_class.__dict__.keys(): #in reality it needs the other res keys too
-            if self._reservation is None:
-                reservation_keys = {
-                    "date_started": self._res_date_start,
-                    "date_ended": self._res_date_end,
-                    "renter_id": self._res_renter_id,
-                    "item_id": self._res_item_id}
-                self._reservation = Reservations.get(reservation_keys)
-            return self._reservation
+            reservation_keys = {
+                "date_started": self._res_date_start,
+                "date_ended": self._res_date_end,
+                "renter_id": self._res_renter_id,
+                "item_id": self._res_item_id}
+            return Reservations.get(reservation_keys)
         else:
             raise Exception("This class cannot inherit from the reservation decorator. No res keys provided.")
 

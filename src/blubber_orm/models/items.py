@@ -12,26 +12,19 @@ class ItemModelDecorator:
     key `item_id`.
     """
 
-    _item = None
     item_id = None
 
     @property
     def item(self):
         model_class = type(self)
         if "item_id" in model_class.__dict__.keys():
-            if self._item is None:
-                self._item = Items.get(self.item_id)
-            return self._item
+            return Items.get(self.item_id)
         else:
             raise Exception("This class cannot inherit from the item decorator. No item_id attribute.")
 
 class Items(Models, AddressModelDecorator):
     table_name = "items"
     table_primaries = ["id"]
-
-    _lister = None
-    _details = None
-    _calendar = None
 
     _address_num = None
     _address_street = None
@@ -67,8 +60,8 @@ class Items(Models, AddressModelDecorator):
     def is_available(self, is_available):
         SQL = "UPDATE items SET is_available = %s WHERE id = %s;" # Note: no quotes
         data = (is_available, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self._is_available = is_available
 
     @property
@@ -79,8 +72,8 @@ class Items(Models, AddressModelDecorator):
     def is_routed(self, is_routed):
         SQL = "UPDATE items SET is_routed = %s WHERE id = %s;" # Note: no quotes
         data = (is_routed, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self._is_routed = is_routed
 
     @property
@@ -91,8 +84,8 @@ class Items(Models, AddressModelDecorator):
     def is_featured(self, is_featured):
         SQL = "UPDATE items SET is_featured = %s WHERE id = %s;" # Note: no quotes
         data = (is_featured, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self._is_featured = is_featured
 
     @property
@@ -101,15 +94,11 @@ class Items(Models, AddressModelDecorator):
 
     @property
     def details(self):
-        if self._details is None:
-            self._details = Details.get(self.id)
-        return self._details
+        return Details.get(self.id)
 
     @property
     def calendar(self):
-        if self._calendar is None:
-            self._calendar = Calendars.get(self.id)
-        return self._calendar
+        return Calendars.get(self.id)
 
     @classmethod
     def by_address(cls, address):
@@ -141,13 +130,29 @@ class Items(Models, AddressModelDecorator):
         return items
 
     @classmethod
+    def by_lister(cls, lister):
+        #get all items in this lister
+        SQL = "SELECT * FROM items WHERE lister_id = %s;" # Note: no quotes
+        data = (lister.id, )
+        cls.database.cursor.execute(SQL, data)
+        items = []
+        for query in cls.database.cursor.fetchall():
+            db_item = sql_to_dictionary(cls.database.cursor, query)
+            items.append(Items(db_item))
+        return items
+
+    @classmethod
     def by_tag(cls, tag):
         SQL = "SELECT * FROM tagging WHERE tag_name = %s;"
         data = (tag.name, )
         cls.database.cursor.execute(SQL, data)
         items = []
+        db_items = []
         for query in cls.database.cursor.fetchall():
             db_item_by_tag = sql_to_dictionary(cls.database.cursor, query)
+            db_items.append(db_item_by_tag)
+
+        for db_item_by_tag in db_items:
             items.append(Items.get(db_item_by_tag["item_id"]))
         return items
 
@@ -157,28 +162,28 @@ class Items(Models, AddressModelDecorator):
     def lock(self, user):
         SQL = "UPDATE items SET is_locked = %s, last_locked = %s WHERE id = %s;" # Note: no quotes
         data = (True, user.id, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self.refresh()
 
     def unlock(self):
         SQL = "UPDATE items SET is_locked = %s, last_locked = %s, is_routed = %s WHERE id = %s;" # Note: no quotes
         data = (False, 0, False, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self.refresh()
 
     def add_tag(self, tag):
         SQL = "INSERT INTO tagging (item_id, tag_name) VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.id, tag.name) #sensitive to tuple order
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     def remove_tag(self, tag):
         SQL = "DELETE * FROM tagging WHERE item_id = %s AND tag_name = %s;" #does this return a tuple or single value?
         data = (self.id, tag.name) #sensitive to tuple order
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     def refresh(self):
         self = Items.get(self.id)
@@ -249,12 +254,8 @@ class Calendars(Models, ItemModelDecorator):
 
     @property
     def reservations(self):
-        if self._reservations is None:
-            filters = {
-                "item_id": self.item_id,
-                "is_calendared": True}
-            self._reservations = Reservations.filter(filters)
-        return self._reservations
+        filters = {"item_id": self.item_id, "is_calendared": True}
+        return Reservations.filter(filters)
 
     def size(self):
         return len(self.reservations)
@@ -269,8 +270,8 @@ class Calendars(Models, ItemModelDecorator):
             reservation.renter_id,
             reservation.date_started,
             reservation.date_ended)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
         #resetting self.contents
         self._reservations = None
@@ -284,8 +285,8 @@ class Calendars(Models, ItemModelDecorator):
             reservation.renter_id,
             reservation.date_started,
             reservation.date_ended)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
         #resetting self.contents
         self._reservations = None

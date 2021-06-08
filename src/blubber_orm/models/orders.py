@@ -9,15 +9,11 @@ class OrderModelDecorator:
     key `order_id`.
     """
 
-    _order = None
-
     @property
     def order(self):
         model_class = type(self)
         if "order_id" in model_class.__dict__.keys():
-            if self._order is None:
-                self._order = Orders.get(self.order_id)
-            return self._order
+            return Orders.get(self.order_id)
         else:
             raise Exception("This class cannot inherit from the order decorator. No order_id attribute.")
 
@@ -25,9 +21,7 @@ class Orders(Models, ReservationModelDecorator):
     table_name = "orders"
     table_primaries = ["id"]
 
-    _extensions = None
     _ext_date_end = None
-    _lister = None
 
     _res_date_start = None
     _res_date_end = None
@@ -50,6 +44,7 @@ class Orders(Models, ReservationModelDecorator):
 
     @property
     def ext_date_end(self):
+        """Get the true end date for the order, extensions considered."""
         extensions = self.extensions
         if extensions:
             extensions.sort(key = lambda ext: ext.res_date_end)
@@ -70,8 +65,8 @@ class Orders(Models, ReservationModelDecorator):
     def is_dropoff_scheduled(self, is_dropoff_scheduled):
         SQL = "UPDATE orders SET is_dropoff_scheduled = %s WHERE id = %s;" # Note: no quotes
         data = (is_dropoff_scheduled, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self._is_dropoff_scheduled = is_dropoff_scheduled
 
     @property
@@ -82,22 +77,17 @@ class Orders(Models, ReservationModelDecorator):
     def is_pickup_scheduled(self, is_pickup_scheduled):
         SQL = "UPDATE orders SET is_pickup_scheduled = %s WHERE id = %s;" # Note: no quotes
         data = (is_pickup_scheduled, self.id)
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
         self._is_pickup_scheduled = is_pickup_scheduled
 
     @property
     def extensions(self):
-        if self._extensions is None:
-            extensions = Extensions.filter({"order_id": self.id})
-            self._extensions = extensions
-        return self._extensions
+        return Extensions.filter({"order_id": self.id})
 
     @property
     def lister(self):
-        if self._lister is None:
-            self._lister = Users.get(self._lister_id)
-        return self._lister
+        return Users.get(self._lister_id)
 
     @classmethod
     def by_pickup(cls, pickup):
@@ -137,8 +127,8 @@ class Orders(Models, ReservationModelDecorator):
             early_return_reservation.date_ended,
             self.id
         )
-        self.database.cursor.execute(SQL, data)
-        self.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
 class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
 

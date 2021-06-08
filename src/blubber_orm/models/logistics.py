@@ -13,8 +13,6 @@ class Logistics(Models, AddressModelDecorator):
 
     table_primaries = ["dt_sched", "renter_id"]
 
-    _renter = None
-
     _address_num = None
     _address_street = None
     _address_apt = None
@@ -36,9 +34,7 @@ class Logistics(Models, AddressModelDecorator):
 
     @property
     def renter(self):
-        if self._renter is None:
-            self._renter = Users.get(self.renter_id)
-        return self._renter
+        return Users.get(self.renter_id)
 
     @classmethod
     def get(cls, logistics_keys):
@@ -76,8 +72,6 @@ class Pickups(Models):
     table_name = "pickups"
     table_primaries = ["pickup_date", "dt_sched", "renter_id"]
 
-    _logistics = None
-
     def __init__(self, db_data):
         self.pickup_date = db_data["pickup_date"]
         self.dt_scheduled = db_data["dt_sched"]
@@ -85,12 +79,8 @@ class Pickups(Models):
 
     @property
     def logistics(self):
-        if self._logistics is None:
-            keys = {
-                "dt_sched": self.dt_scheduled,
-                "renter_id": self.renter_id}
-            self._logistics = Logistics.get(keys)
-        return self._logistics
+        keys = {"dt_sched": self.dt_scheduled, "renter_id": self.renter_id}
+        return Logistics.get(keys)
 
     @classmethod
     def by_order(cls, order):
@@ -148,8 +138,8 @@ class Pickups(Models):
             VALUES (%s, %s, %s, %s);"""
         for order in orders:
             data = (order.id, self.pickup_date, self.dt_scheduled, self.renter_id)
-            self.database.cursor.execute(SQL, data)
-            self.database.connection.commit()
+            Models.database.cursor.execute(SQL, data)
+            Models.database.connection.commit()
             order.is_pickup_scheduled = True
 
     def refresh(self):
@@ -163,8 +153,6 @@ class Dropoffs(Models):
     table_name = "dropoffs"
     table_primaries = ["dropoff_date", "dt_sched", "renter_id"]
 
-    _logistics = None
-
     def __init__(self, db_data):
         self.dropoff_date = db_data["dropoff_date"]
         self.dt_scheduled = db_data["dt_sched"]
@@ -172,12 +160,8 @@ class Dropoffs(Models):
 
     @property
     def logistics(self):
-        if self._logistics is None:
-            keys = {
-                "dt_sched": self.dt_scheduled,
-                "renter_id": self.renter_id}
-            self._logistics = Logistics.get(keys)
-        return self._logistics
+        keys = {"dt_sched": self.dt_scheduled, "renter_id": self.renter_id}
+        return Logistics.get(keys)
 
     @classmethod
     def by_order(cls, order):
@@ -235,8 +219,8 @@ class Dropoffs(Models):
             VALUES (%s, %s, %s, %s);"""
         for order in orders:
             data = (order.id, self.dropoff_date, self.dt_scheduled, self.renter_id)
-            self.database.cursor.execute(SQL, data)
-            self.database.connection.commit()
+            Models.database.cursor.execute(SQL, data)
+            Models.database.connection.commit()
             order.is_dropoff_scheduled = True
 
     def refresh(self):

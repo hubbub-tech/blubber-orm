@@ -92,10 +92,14 @@ class Tags(Models):
         data = (item.id, )
         cls.database.cursor.execute(SQL, data)
         tags = []
+        db_tags = []
         for query in cls.database.cursor.fetchall():
             db_tag_by_item = sql_to_dictionary(cls.database.cursor, query)
+            db_tags.append(db_tag_by_item)
+
+        for db_tag_by_item in db_tags:
             tags.append(Tags.get(db_tag_by_item["tag_name"]))
-        return tags
+        return items
 
     @classmethod
     def get(cls, tag_name):

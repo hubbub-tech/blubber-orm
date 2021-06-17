@@ -1,4 +1,4 @@
-Models.daModels.dafrom .db import sql_to_dictionary
+from .db import sql_to_dictionary
 from .base import Models
 from .items import ItemModelDecorator
 from .users import UserModelDecorator

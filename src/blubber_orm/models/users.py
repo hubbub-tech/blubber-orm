@@ -1,4 +1,4 @@
-DELETEfrom .db import sql_to_dictionary
+from .db import sql_to_dictionary
 from .base import Models
 from .addresses import AddressModelDecorator
 from .items import Items #for carts

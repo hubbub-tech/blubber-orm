@@ -290,8 +290,8 @@ class Carts(Models, UserModelDecorator):
         Models.database.cursor.execute(SQL, data)
         self._total -= reservation._charge
         self._total_deposit -= reservation._deposit
-        SQL = "UPDATE carts SET total = %s WHERE id = %s;"
-        data = (self._total, self.user_id)
+        SQL = "UPDATE carts SET total = %s, total_deposit = %s WHERE id = %s;"
+        data = (self._total, self._total_deposit, self.user_id)
         Models.database.cursor.execute(SQL, data)
 
         SQL = """
@@ -317,8 +317,8 @@ class Carts(Models, UserModelDecorator):
         self._total += reservation._charge
         self._total_deposit += reservation._deposit
 
-        SQL = "UPDATE carts SET total = %s WHERE id = %s;"
-        data = (self._total, self.user_id)
+        SQL = "UPDATE carts SET total = %s, total_deposit = %s WHERE id = %s;"
+        data = (self._total, self._total_deposit, self.user_id)
         Models.database.cursor.execute(SQL, data)
 
         SQL = """

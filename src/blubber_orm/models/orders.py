@@ -34,7 +34,7 @@ class Orders(Models, ReservationModelDecorator):
         self.date_placed = db_data["date_placed"]
         self.is_online_pay = db_data["is_online_pay"]
         self._is_dropoff_scheduled = db_data["is_dropoff_sched"]
-        self._is_pickup_scheduled = db_data["is_pick_sched"]
+        self._is_pickup_scheduled = db_data["is_pickup_sched"]
         self._lister_id = db_data["lister_id"]
         #reservation
         self._res_date_start = db_data["res_date_start"]
@@ -129,6 +129,9 @@ class Orders(Models, ReservationModelDecorator):
         )
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
+
+    def refresh(self):
+        self = Orders.get(self.id)
 
 class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
 

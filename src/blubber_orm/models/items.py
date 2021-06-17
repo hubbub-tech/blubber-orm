@@ -325,7 +325,7 @@ class Calendars(Models, ItemModelDecorator):
 
     #schedules a reservation if valid, returns false if not, returns none if expired item
     def scheduler(self, new_res, bookings=None):
-        if not bookings:
+        if bookings is None:
             bookings = self.reservations
             bookings.sort(key = lambda res: res.date_ended)
         _bookings = [res for res in bookings]

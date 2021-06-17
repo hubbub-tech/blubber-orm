@@ -91,8 +91,8 @@ class Reservations(Models):
             reservation_keys['renter_id'],
             reservation_keys['item_id']]
         data = tuple(updates + keys)
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     @classmethod
     def get(cls, reservation_keys):
@@ -107,8 +107,8 @@ class Reservations(Models):
             reservation_keys['date_ended'],
             reservation_keys['renter_id'],
             reservation_keys['item_id'])
-        cls.database.cursor.execute(SQL, data)
-        db_reservation = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        Models.database.cursor.execute(SQL, data)
+        db_reservation = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
         return Reservations(db_reservation)
 
     @classmethod
@@ -124,5 +124,5 @@ class Reservations(Models):
             reservation_keys['date_ended'],
             reservation_keys['renter_id'],
             reservation_keys['item_id'])
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()

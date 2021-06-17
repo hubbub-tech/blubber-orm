@@ -45,8 +45,8 @@ class Addresses(Models):
             address_keys['street'],
             address_keys['apt'],
             address_keys['zip'])
-        cls.database.cursor.execute(SQL, data)
-        db_address = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        Models.database.cursor.execute(SQL, data)
+        db_address = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
         return Addresses(db_address) # query here
 
     #TODO: Addresses shouldnt change once created
@@ -64,8 +64,8 @@ class Addresses(Models):
             address_keys['apt'],
             address_keys['zip']]
         data = tuple(updates + keys)
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     @classmethod
     def delete(cls, address_keys):
@@ -77,8 +77,8 @@ class Addresses(Models):
             address_keys['street'],
             address_keys['apt'],
             address_keys['zip'])
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     def display(self):
         return f"{self.num} {self.street}, {self.city}, {self.state} {self.zip_code}"

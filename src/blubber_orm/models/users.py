@@ -122,12 +122,12 @@ class Users(Models, AddressModelDecorator):
     @classmethod
     def get_all_listers(cls):
         SQL = f"SELECT * FROM listers;"
-        cls.database.cursor.execute(SQL)
+        Models.database.cursor.execute(SQL)
 
         listers = []
         db_lister_ids = []
-        for query in cls.database.cursor.fetchall():
-            db_lister = sql_to_dictionary(cls.database.cursor, query)
+        for query in Models.database.cursor.fetchall():
+            db_lister = sql_to_dictionary(Models.database.cursor, query)
             db_lister_ids.append(db_lister)
 
         for db_lister in db_lister_ids:
@@ -138,12 +138,12 @@ class Users(Models, AddressModelDecorator):
     @classmethod
     def get_all_renters(cls):
         SQL = f"SELECT * FROM renters;"
-        cls.database.cursor.execute(SQL)
+        Models.database.cursor.execute(SQL)
 
         renters = []
         db_renter_ids = []
-        for query in cls.database.cursor.fetchall():
-            db_renter = sql_to_dictionary(cls.database.cursor, query)
+        for query in Models.database.cursor.fetchall():
+            db_renter = sql_to_dictionary(Models.database.cursor, query)
             db_renter_ids.append(db_renter)
 
         for db_renter in db_renter_ids:
@@ -169,11 +169,11 @@ class Users(Models, AddressModelDecorator):
                 AND address_apt = %s
                 AND address_zip = %s;""" # Note: no quotes
         data = (address.num, address.street, address.apt, address.zip_code)
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
         users = []
-        for query in cls.database.cursor.fetchall():
-            db_user = sql_to_dictionary(cls.database.cursor, query)
-            users.append(cls(db_user))
+        for query in Models.database.cursor.fetchall():
+            db_user = sql_to_dictionary(Models.database.cursor, query)
+            users.append(Users(db_user))
         return users
 
     @classmethod
@@ -181,19 +181,19 @@ class Users(Models, AddressModelDecorator):
         #get all items in this general location
         SQL = "SELECT * FROM users WHERE address_zip = %s;" # Note: no quotes
         data = (zip_code, )
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
         users = []
-        for query in cls.database.cursor.fetchall():
-            db_user = sql_to_dictionary(cls.database.cursor, query)
-            users.append(cls(db_user))
+        for query in Models.database.cursor.fetchall():
+            db_user = sql_to_dictionary(Models.database.cursor, query)
+            users.append(Users(db_user))
         return users
 
     @classmethod
     def search_renter(cls, user):
         SQL = "SELECT * FROM renters WHERE renter_id = %s;" # Note: no quotes
         data = (user.id, )
-        cls.database.cursor.execute(SQL, data)
-        if cls.database.cursor.fetchone():
+        Models.database.cursor.execute(SQL, data)
+        if Models.database.cursor.fetchone():
             return True
         else:
             return False
@@ -202,8 +202,8 @@ class Users(Models, AddressModelDecorator):
     def search_lister(cls, user):
         SQL = "SELECT * FROM listers WHERE lister_id = %s;" # Note: no quotes
         data = (user.id, )
-        cls.database.cursor.execute(SQL, data)
-        if cls.database.cursor.fetchone():
+        Models.database.cursor.execute(SQL, data)
+        if Models.database.cursor.fetchone():
             return True
         else:
             return False
@@ -259,9 +259,9 @@ class Carts(Models, UserModelDecorator):
     def by_item(cls, item):
         SQL = "SELECT cart_id FROM shopping WHERE item_id = %s;" #does this return a tuple or single value?
         data = (item.id, )
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
         carts = []
-        db_cart_ids = [id for id in cls.database.cursor.fetchall()]
+        db_cart_ids = [id for id in Models.database.cursor.fetchall()]
         for id in db_cart_ids:
             carts.append(Carts.get(id))
         return carts
@@ -278,7 +278,8 @@ class Carts(Models, UserModelDecorator):
         data = (self.user_id, )
         Models.database.cursor.execute(SQL, data)
         items = []
-        for id in Models.database.cursor.fetchall():
+        db_item_ids = [id for id in Models.database.cursor.fetchall()]
+        for id in db_item_ids:
             items.append(Items.get(id))
         return items
 
@@ -366,7 +367,8 @@ class Carts(Models, UserModelDecorator):
         data = (True, self.user_id, False)
         Models.database.cursor.execute(SQL, data)
         items = []
-        for id in Models.database.cursor.fetchall():
+        db_item_ids = [id for id in Models.database.cursor.fetchall()]
+        for id in db_item_ids:
             items.append(Items.get(id))
         return items
 

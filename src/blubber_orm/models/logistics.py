@@ -40,8 +40,8 @@ class Logistics(Models, AddressModelDecorator):
     def get(cls, logistics_keys):
         SQL = "SELECT * FROM logistics WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (logistics_keys["dt_sched"], logistics_keys["renter_id"])
-        cls.database.cursor.execute(SQL, data)
-        db_logistics = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        Models.database.cursor.execute(SQL, data)
+        db_logistics = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
         return Logistics(db_logistics)
 
     @classmethod
@@ -52,15 +52,15 @@ class Logistics(Models, AddressModelDecorator):
         updates = [value for value in changes.values()]
         keys = [logistics_keys['dt_sched'], logistics_keys['renter_id']]
         data = tuple(updates + keys)
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     @classmethod
     def delete(cls, logistics_keys):
         SQL = "DELETE FROM logistics WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (logistics_keys['dt_sched'], logistics_keys['renter_id'])
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     def refresh(self):
         logistics_keys = {
@@ -86,8 +86,8 @@ class Pickups(Models):
     def by_order(cls, order):
         SQL = "SELECT pickup_date, dt_sched, renter_id FROM order_pickups WHERE order_id = %s;" # Note: no quotes
         data = (order.id, )
-        cls.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        Models.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
         return Pickups.get(db_obj)
 
     @classmethod
@@ -100,8 +100,8 @@ class Pickups(Models):
             #Change dropoff dt_completed to current time
             SQL = "UPDATE order_pickups SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
             data = (datetime.now(tz=pytz.UTC), order.id)
-            cls.database.cursor.execute(SQL, data)
-            cls.database.connection.commit()
+            Models.database.cursor.execute(SQL, data)
+            Models.database.connection.commit()
         else:
             raise Exception(f"No pickup object is associated with <Order {order.id}>.")
 
@@ -109,9 +109,9 @@ class Pickups(Models):
     def get(cls, pickup_keys):
         SQL = f"SELECT * FROM pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
         data = (pickup_keys["pickup_date"], pickup_keys["dt_sched"], pickup_keys["renter_id"])
-        cls.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
-        return cls(db_obj)
+        Models.database.cursor.execute(SQL, data)
+        db_pickup = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
+        return Pickups(db_pickup)
 
     @classmethod
     def set(cls, pickup_keys, changes):
@@ -121,15 +121,15 @@ class Pickups(Models):
         updates = [value for value in changes.values()]
         keys = [pickup_keys['pickup_date'], pickup_keys['dt_sched'], pickup_keys['renter_id']]
         data = tuple(updates + keys)
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     @classmethod
     def delete(cls, pickup_keys):
         SQL = f"DELETE FROM pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
         data = (pickup_keys["pickup_date"], pickup_keys["dt_sched"], pickup_keys["renter_id"])
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     def schedule_orders(self, orders):
         #ASSERT takes a list
@@ -167,8 +167,8 @@ class Dropoffs(Models):
     def by_order(cls, order):
         SQL = "SELECT dropoff_date, dt_sched, renter_id FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
         data = (order.id, )
-        cls.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        Models.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
         return Dropoffs.get(db_obj)
 
     @classmethod
@@ -181,8 +181,8 @@ class Dropoffs(Models):
             #Change dropoff dt_completed to current time
             SQL = "UPDATE order_dropoffs SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
             data = (datetime.now(tz=pytz.UTC), order.id)
-            cls.database.cursor.execute(SQL, data)
-            cls.database.connection.commit()
+            Models.database.cursor.execute(SQL, data)
+            Models.database.connection.commit()
         else:
             raise Exception(f"No dropoff object is associated with <Order {order.id}>.")
 
@@ -190,9 +190,9 @@ class Dropoffs(Models):
     def get(cls, dropoff_keys):
         SQL = f"SELECT * FROM dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
         data = (dropoff_keys["dropoff_date"], dropoff_keys["dt_sched"], dropoff_keys["renter_id"])
-        cls.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
-        return cls(db_obj)
+        Models.database.cursor.execute(SQL, data)
+        db_dropoff = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
+        return Dropoffs(db_dropoff)
 
     @classmethod
     def set(cls, dropoff_keys, changes):
@@ -202,15 +202,15 @@ class Dropoffs(Models):
         updates = [value for value in changes.values()]
         keys = [dropoff_keys['dropoff_date'], dropoff_keys['dt_sched'], dropoff_keys['renter_id']]
         data = tuple(updates + keys)
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     @classmethod
     def delete(cls, dropoff_keys):
         SQL = f"DELETE FROM dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
         data = (dropoff_keys["dropoff_date"], dropoff_keys["dt_sched"], dropoff_keys["renter_id"])
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     def schedule_orders(self, orders):
         #ASSERT takes a list

@@ -93,8 +93,8 @@ class Orders(Models, ReservationModelDecorator):
     def by_pickup(cls, pickup):
         SQL = "SELECT order_id FROM order_pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
         data = (pickup.date_pickup, pickup._dt_sched, pickup._renter_id)
-        cls.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
+        Models.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
         order = Orders.get(db_obj["order_id"])
         return order
 
@@ -102,8 +102,8 @@ class Orders(Models, ReservationModelDecorator):
     def by_dropoff(cls, dropoff):
         SQL = "SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
         data = (dropoff.date_dropoff, dropoff._dt_sched, dropoff._renter_id)
-        cls.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
+        Models.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
         order = Orders.get(db_obj["order_id"])
         return order
 
@@ -157,8 +157,8 @@ class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
     def get(cls, extension_keys):
         SQL = "SELECT * FROM extensions WHERE order_id = %s AND res_date_end = %s;" # Note: no quotes
         data = (extension_keys['order_id'], extension_keys['res_date_end'])
-        cls.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        Models.database.cursor.execute(SQL, data)
+        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
         return Extensions(db_obj)
 
     @classmethod
@@ -169,8 +169,8 @@ class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
     def delete(cls, extension_keys):
         SQL = "DELETE FROM extensions WHERE order_id = %s AND res_date_end = %s;"
         data = (extension_keys['order_id'], extension_keys['res_date_end'])
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     def refresh(self):
         extension_keys = {

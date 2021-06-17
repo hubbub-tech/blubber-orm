@@ -105,7 +105,7 @@ class Models(AbstractModels):
 
     @classmethod
     def insert(cls, attributes):
-        debug = cls.database._debug
+        debug = Models.database._debug
 
         attributes_str = ", ".join(attributes.keys())
         placeholders = ["%s" for attribute in attributes.values()]
@@ -113,15 +113,15 @@ class Models(AbstractModels):
         primaries_str = ", ".join(cls.table_primaries)
         SQL = f"INSERT INTO {cls.table_name} ({attributes_str}) VALUES ({placeholders_str}) RETURNING {primaries_str};"
         data = tuple(attributes.values())
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
         if debug:
             print("SQL command: ", SQL)
             print("Data: ", data)
-            print("Database cursor: ", cls.database.cursor)
+            print("Database cursor: ", Models.database.cursor)
 
-        primary_key = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        primary_key = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
         if len(primary_key.keys()) == 1:
             primary_key, = primary_key.values()
         new_entry = cls.get(primary_key)
@@ -129,48 +129,48 @@ class Models(AbstractModels):
 
     @classmethod
     def get(cls, id):
-        debug = cls.database._debug
+        debug = Models.database._debug
 
         SQL = f"SELECT * FROM {cls.table_name} WHERE id = %s;" # Note: no quotes
         data = (id, )
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
 
         if debug:
             print("SQL command: ", SQL)
             print("Data: ", data)
-            print("Database cursor: ", cls.database.cursor)
+            print("Database cursor: ", Models.database.cursor)
 
-        db_obj = sql_to_dictionary(cls.database.cursor, cls.database.cursor.fetchone())
+        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
         return cls(db_obj)
 
     @classmethod
     def get_all(cls):
-        debug = cls.database._debug
+        debug = Models.database._debug
 
         SQL = f"SELECT * FROM {cls.table_name};" # Note: no quotes
-        cls.database.cursor.execute(SQL)
+        Models.database.cursor.execute(SQL)
 
         if debug:
             print("SQL command: ", SQL)
-            print("Database cursor (fetch sample): ", cls.database.cursor)
+            print("Database cursor (fetch sample): ", Models.database.cursor)
 
         obj_list = []
-        for query in cls.database.cursor.fetchall():
-            db_obj = sql_to_dictionary(cls.database.cursor, query)
+        for query in Models.database.cursor.fetchall():
+            db_obj = sql_to_dictionary(Models.database.cursor, query)
             obj_list.append(cls(db_obj))
         return obj_list
 
     @classmethod
     def set(cls, id, attributes):
-        debug = cls.database._debug
+        debug = Models.database._debug
 
         conditions = [f"{attributes} = %s" for attributes in attributes.keys()]
         conditions_str = ", ".join(conditions)
         updates = [parameters for parameters in attributes.values()]
         SQL = f"UPDATE {cls.table_name} SET {conditions_str} WHERE id = %s;" # Note: no quotes
         data = tuple(updates + [id])
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
         if debug:
             print("SQL command: ", SQL)
@@ -178,52 +178,52 @@ class Models(AbstractModels):
 
     @classmethod
     def filter(cls, filters):
-        debug = cls.database._debug
+        debug = Models.database._debug
 
         conditions = [f"{filter} = %s" for filter in filters.keys()]
         conditions_str = " AND ".join(conditions)
         SQL = f"SELECT * FROM {cls.table_name} WHERE {conditions_str};" # Note: no quotes
         data = tuple([parameters for parameters in filters.values()])
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
 
         if debug:
             print("SQL command: ", SQL)
             print("Data: ", data)
-            print("Database cursor (fetch sample): ", cls.database.cursor)
+            print("Database cursor (fetch sample): ", Models.database.cursor)
 
         obj_list = []
-        for query in cls.database.cursor.fetchall():
-            db_obj = sql_to_dictionary(cls.database.cursor, query)
+        for query in Models.database.cursor.fetchall():
+            db_obj = sql_to_dictionary(Models.database.cursor, query)
             obj_list.append(cls(db_obj))
         return obj_list # query here
 
     @classmethod
     def like(cls, attribute, key):
-        debug = cls.database._debug
+        debug = Models.database._debug
 
         SQL = f"SELECT * FROM {cls.table_name} WHERE {attribute} ILIKE %s;"
         data = (key,)
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
 
         if debug:
             print("SQL command: ", SQL)
             print("Data: ", data)
-            print("Database cursor (fetch sample): ", cls.database.cursor)
+            print("Database cursor (fetch sample): ", Models.database.cursor)
 
         obj_list = []
-        for query in cls.database.cursor.fetchall():
-            db_obj = sql_to_dictionary(cls.database.cursor, query)
+        for query in Models.database.cursor.fetchall():
+            db_obj = sql_to_dictionary(Models.database.cursor, query)
             obj_list.append(cls(db_obj))
         return obj_list
 
     @classmethod
     def delete(cls, id):
-        debug = cls.database._debug
+        debug = Models.database._debug
 
         SQL = f"DELETE FROM {cls.table_name} WHERE id = %s;" # Note: no quotes
         data = (id, )
-        cls.database.cursor.execute(SQL, data)
-        cls.database.connection.commit()
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
         if debug:
             print("SQL command: ", SQL)
@@ -239,7 +239,7 @@ class Models(AbstractModels):
         If not, then return False and print the name of the first entry to fail
         the check.
         """
-        debug = cls.database._debug
+        debug = Models.database._debug
         _query_column_names = query_column_names
         _comparison_column_name = _query_column_names.pop(0)
         if set([_comparison_column_name]).issubset(cls._get_columns()):
@@ -255,11 +255,11 @@ class Models(AbstractModels):
 
     @classmethod
     def _get_columns(cls):
-        debug = cls.database._debug
+        debug = Models.database._debug
 
         if cls.table_columns is None:
-            cls.database.cursor.execute(f"SELECT * FROM {cls.table_name} LIMIT 0")
-            columns = [attribute.name for attribute in cls.database.cursor.description]
+            Models.database.cursor.execute(f"SELECT * FROM {cls.table_name} LIMIT 0")
+            columns = [attribute.name for attribute in Models.database.cursor.description]
             cls.table_columns = columns
 
             if debug:
@@ -284,7 +284,7 @@ class Models(AbstractModels):
 
     @classmethod
     def does_row_exist(cls, details, table=None):
-        debug = cls.database._debug
+        debug = Models.database._debug
 
         conditions = [f"{detail} = %s" for detail in details.keys()]
         conditions_str = " AND ".join(conditions)
@@ -292,14 +292,14 @@ class Models(AbstractModels):
             table = cls.table_name
         SQL = f"SELECT * FROM {table} WHERE {conditions_str};"
         data = tuple([detail for detail in details.values()])
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
 
         if debug:
             print("SQL command: ", SQL)
             print("Data: ", data)
-            print("Database cursor (fetch sample): ", cls.database.cursor)
+            print("Database cursor (fetch sample): ", Models.database.cursor)
 
-        return cls.database.cursor.fetchone() is not None
+        return Models.database.cursor.fetchone() is not None
 
     def __repr__(self):
         model = self.table_name.capitalize()

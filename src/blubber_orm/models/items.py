@@ -110,10 +110,10 @@ class Items(Models, AddressModelDecorator):
                 AND address_apt = %s
                 AND address_zip = %s;""" # Note: no quotes
         data = (address.num, address.street, address.apt, address.zip_code)
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
         items = []
-        for query in cls.database.cursor.fetchall():
-            db_item = sql_to_dictionary(cls.database.cursor, query)
+        for query in Models.database.cursor.fetchall():
+            db_item = sql_to_dictionary(Models.database.cursor, query)
             items.append(Items(db_item))
         return items
 
@@ -122,10 +122,10 @@ class Items(Models, AddressModelDecorator):
         #get all items in this general location
         SQL = "SELECT * FROM items WHERE address_zip = %s;" # Note: no quotes
         data = (zip_code, )
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
         items = []
-        for query in cls.database.cursor.fetchall():
-            db_item = sql_to_dictionary(cls.database.cursor, query)
+        for query in Models.database.cursor.fetchall():
+            db_item = sql_to_dictionary(Models.database.cursor, query)
             items.append(Items(db_item))
         return items
 
@@ -134,10 +134,10 @@ class Items(Models, AddressModelDecorator):
         #get all items in this lister
         SQL = "SELECT * FROM items WHERE lister_id = %s;" # Note: no quotes
         data = (lister.id, )
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
         items = []
-        for query in cls.database.cursor.fetchall():
-            db_item = sql_to_dictionary(cls.database.cursor, query)
+        for query in Models.database.cursor.fetchall():
+            db_item = sql_to_dictionary(Models.database.cursor, query)
             items.append(Items(db_item))
         return items
 
@@ -145,11 +145,11 @@ class Items(Models, AddressModelDecorator):
     def by_tag(cls, tag):
         SQL = "SELECT * FROM tagging WHERE tag_name = %s;"
         data = (tag.name, )
-        cls.database.cursor.execute(SQL, data)
+        Models.database.cursor.execute(SQL, data)
         items = []
         db_items = []
-        for query in cls.database.cursor.fetchall():
-            db_item_by_tag = sql_to_dictionary(cls.database.cursor, query)
+        for query in Models.database.cursor.fetchall():
+            db_item_by_tag = sql_to_dictionary(Models.database.cursor, query)
             db_items.append(db_item_by_tag)
 
         for db_item_by_tag in db_items:

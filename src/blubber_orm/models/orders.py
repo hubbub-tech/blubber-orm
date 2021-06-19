@@ -1,6 +1,6 @@
 from .db import sql_to_dictionary
 from .base import Models
-from .users import Users
+from .users import Users # for order.lister
 from .reservations import Reservations, ReservationModelDecorator
 
 class OrderModelDecorator:
@@ -63,7 +63,7 @@ class Orders(Models, ReservationModelDecorator):
 
     @is_dropoff_scheduled.setter
     def is_dropoff_scheduled(self, is_dropoff_scheduled):
-        SQL = "UPDATE orders SET is_dropoff_scheduled = %s WHERE id = %s;" # Note: no quotes
+        SQL = "UPDATE orders SET is_dropoff_sched = %s WHERE id = %s;" # Note: no quotes
         data = (is_dropoff_scheduled, self.id)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
@@ -75,7 +75,7 @@ class Orders(Models, ReservationModelDecorator):
 
     @is_pickup_scheduled.setter
     def is_pickup_scheduled(self, is_pickup_scheduled):
-        SQL = "UPDATE orders SET is_pickup_scheduled = %s WHERE id = %s;" # Note: no quotes
+        SQL = "UPDATE orders SET is_pickup_sched = %s WHERE id = %s;" # Note: no quotes
         data = (is_pickup_scheduled, self.id)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
@@ -91,7 +91,7 @@ class Orders(Models, ReservationModelDecorator):
 
     @classmethod
     def by_pickup(cls, pickup):
-        SQL = "SELECT order_id FROM order_pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        SQL = "SELECT order_id FROM order_pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (pickup.date_pickup, pickup._dt_sched, pickup._renter_id)
         Models.database.cursor.execute(SQL, data)
         db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
@@ -100,7 +100,7 @@ class Orders(Models, ReservationModelDecorator):
 
     @classmethod
     def by_dropoff(cls, dropoff):
-        SQL = "SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        SQL = "SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (dropoff.date_dropoff, dropoff._dt_sched, dropoff._renter_id)
         Models.database.cursor.execute(SQL, data)
         db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
@@ -119,7 +119,7 @@ class Orders(Models, ReservationModelDecorator):
         assert early_return_reservation.renter_id == self.renter_id, renter_err
 
         SQL = """UPDATE orders
-            SET is_pickup_scheduled = %s, res_date_start = %s, res_date_end = %s,
+            SET is_pickup_sched = %s, res_date_start = %s, res_date_end = %s
             WHERE id = %s;"""
         data = (
             False,

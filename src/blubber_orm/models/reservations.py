@@ -78,7 +78,7 @@ class Reservations(Models):
     def set(cls, reservation_keys, changes):
         targets = [f"{target} = %s" for target in changes.keys()]
         targets_str = ", ".join(targets)
-        SQL = """
+        SQL = f"""
             UPDATE reservations SET {targets_str}
                 WHERE date_started = %s
                 AND date_ended = %s

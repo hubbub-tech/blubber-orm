@@ -168,7 +168,7 @@ class Items(Models, AddressModelDecorator):
 
     def unlock(self):
         SQL = "UPDATE items SET is_locked = %s, last_locked = %s, is_routed = %s WHERE id = %s;" # Note: no quotes
-        data = (False, 0, False, self.id)
+        data = (False, None, False, self.id)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
         self.refresh()

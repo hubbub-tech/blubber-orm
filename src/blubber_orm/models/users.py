@@ -121,7 +121,7 @@ class Users(Models, AddressModelDecorator):
 
     @classmethod
     def get_all_listers(cls):
-        SQL = f"SELECT * FROM listers;"
+        SQL = "SELECT * FROM listers;"
         Models.database.cursor.execute(SQL)
 
         listers = []
@@ -137,7 +137,7 @@ class Users(Models, AddressModelDecorator):
 
     @classmethod
     def get_all_renters(cls):
-        SQL = f"SELECT * FROM renters;"
+        SQL = "SELECT * FROM renters;"
         Models.database.cursor.execute(SQL)
 
         renters = []

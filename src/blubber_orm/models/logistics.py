@@ -48,7 +48,7 @@ class Logistics(Models, AddressModelDecorator):
     def set(cls, logistics_keys, changes):
         targets = [f"{target} = %s" for target in changes.keys()]
         targets_str = ", ".join(targets)
-        SQL = "UPDATE logistics SET {targets_str} WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
+        SQL = f"UPDATE logistics SET {targets_str} WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
         updates = [value for value in changes.values()]
         keys = [logistics_keys['dt_sched'], logistics_keys['renter_id']]
         data = tuple(updates + keys)
@@ -107,7 +107,7 @@ class Pickups(Models):
 
     @classmethod
     def get(cls, pickup_keys):
-        SQL = f"SELECT * FROM pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        SQL = "SELECT * FROM pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (pickup_keys["pickup_date"], pickup_keys["dt_sched"], pickup_keys["renter_id"])
         Models.database.cursor.execute(SQL, data)
         db_pickup = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
@@ -117,7 +117,7 @@ class Pickups(Models):
     def set(cls, pickup_keys, changes):
         targets = [f"{target} = %s" for target in changes.keys()]
         targets_str = ", ".join(targets)
-        SQL = f"UPDATE pickups SET {targets_str} WHERE pickup_date = %s, AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
+        SQL = f"UPDATE pickups SET {targets_str} WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         updates = [value for value in changes.values()]
         keys = [pickup_keys['pickup_date'], pickup_keys['dt_sched'], pickup_keys['renter_id']]
         data = tuple(updates + keys)
@@ -126,7 +126,7 @@ class Pickups(Models):
 
     @classmethod
     def delete(cls, pickup_keys):
-        SQL = f"DELETE FROM pickups WHERE pickup_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        SQL = "DELETE FROM pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (pickup_keys["pickup_date"], pickup_keys["dt_sched"], pickup_keys["renter_id"])
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
@@ -137,7 +137,7 @@ class Pickups(Models):
             INSERT INTO order_pickups (order_id, pickup_date, renter_id, dt_sched)
             VALUES (%s, %s, %s, %s);"""
         for order in orders:
-            data = (order.id, self.pickup_date, self.dt_scheduled, self.renter_id)
+            data = (order.id, self.pickup_date, self.renter_id, self.dt_scheduled)
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
             order.is_pickup_scheduled = True
@@ -188,7 +188,7 @@ class Dropoffs(Models):
 
     @classmethod
     def get(cls, dropoff_keys):
-        SQL = f"SELECT * FROM dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        SQL = "SELECT * FROM dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (dropoff_keys["dropoff_date"], dropoff_keys["dt_sched"], dropoff_keys["renter_id"])
         Models.database.cursor.execute(SQL, data)
         db_dropoff = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
@@ -198,7 +198,7 @@ class Dropoffs(Models):
     def set(cls, dropoff_keys, changes):
         targets = [f"{target} = %s" for target in changes.keys()]
         targets_str = ", ".join(targets)
-        SQL = f"UPDATE dropoffs SET {targets_str} WHERE dropoff_date = %s, AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
+        SQL = f"UPDATE dropoffs SET {targets_str} WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         updates = [value for value in changes.values()]
         keys = [dropoff_keys['dropoff_date'], dropoff_keys['dt_sched'], dropoff_keys['renter_id']]
         data = tuple(updates + keys)
@@ -207,7 +207,7 @@ class Dropoffs(Models):
 
     @classmethod
     def delete(cls, dropoff_keys):
-        SQL = f"DELETE FROM dropoffs WHERE dropoff_date = %s, dt_sched = %s, renter_id = %s;" # Note: no quotes
+        SQL = f"DELETE FROM dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (dropoff_keys["dropoff_date"], dropoff_keys["dt_sched"], dropoff_keys["renter_id"])
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
@@ -218,7 +218,7 @@ class Dropoffs(Models):
             INSERT INTO order_dropoffs (order_id, dropoff_date, renter_id, dt_sched)
             VALUES (%s, %s, %s, %s);"""
         for order in orders:
-            data = (order.id, self.dropoff_date, self.dt_scheduled, self.renter_id)
+            data = (order.id, self.dropoff_date, self.renter_id, self.dt_scheduled)
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
             order.is_dropoff_scheduled = True

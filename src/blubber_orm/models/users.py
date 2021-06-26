@@ -254,6 +254,7 @@ class Carts(Models, UserModelDecorator):
         self.user_id = db_data["id"]
         self._total = db_data["total"]
         self._total_deposit = db_data["total_deposit"]
+        self._total_tax = db_data["total_tax"]
 
     @classmethod
     def by_item(cls, item):
@@ -289,10 +290,13 @@ class Carts(Models, UserModelDecorator):
         SQL = "DELETE FROM shopping WHERE cart_id = %s AND item_id = %s;" #does this return a tuple or single value?
         data = (self.user_id, reservation.item_id)
         Models.database.cursor.execute(SQL, data)
+
         self._total -= reservation._charge
         self._total_deposit -= reservation._deposit
-        SQL = "UPDATE carts SET total = %s, total_deposit = %s WHERE id = %s;"
-        data = (self._total, self._total_deposit, self.user_id)
+        self._total_tax -= reservation._tax
+
+        SQL = "UPDATE carts SET total = %s, total_deposit = %s, total_tax = %s WHERE id = %s;"
+        data = (self._total, self._total_deposit, self._total_tax, self.user_id)
         Models.database.cursor.execute(SQL, data)
 
         SQL = """
@@ -317,9 +321,10 @@ class Carts(Models, UserModelDecorator):
 
         self._total += reservation._charge
         self._total_deposit += reservation._deposit
+        self._total_tax += reservation._tax
 
-        SQL = "UPDATE carts SET total = %s, total_deposit = %s WHERE id = %s;"
-        data = (self._total, self._total_deposit, self.user_id)
+        SQL = "UPDATE carts SET total = %s, total_deposit = %s, total_tax = %s WHERE id = %s;"
+        data = (self._total, self._total_deposit, self._total_tax, self.user_id)
         Models.database.cursor.execute(SQL, data)
 
         SQL = """

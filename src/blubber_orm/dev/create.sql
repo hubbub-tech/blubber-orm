@@ -109,10 +109,11 @@ CREATE TABLE reservations (
   is_calendared boolean DEFAULT FALSE,
   is_extended boolean DEFAULT FALSE,
   is_in_cart boolean DEFAULT FALSE, -- ade 5/5 - needed to tell which res is in cart
-  charge float,
   renter_id integer,
   item_id integer,
+  charge float,
   deposit float,
+  tax, float,
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
   PRIMARY KEY (date_started, date_ended, renter_id, item_id),
   FOREIGN KEY (renter_id) REFERENCES users (id) ON DELETE CASCADE,

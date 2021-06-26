@@ -49,19 +49,23 @@ class Reservations(Models):
         self.is_in_cart = db_data["is_in_cart"]
         self._charge = db_data["charge"]
         self._deposit = db_data["deposit"]
+        self._tax = db_data["tax"]
         self.item_id = db_data["item_id"]
         self.renter_id = db_data["renter_id"]
         self.dt_created = db_data["dt_created"]
 
     def print_total(self):
-        """This is how much user must pay = charge + deposit"""
-        return self._charge + self._deposit
+        """This is how much user must pay = charge + deposit + tax"""
+        return self._charge + self._deposit + self._tax
 
     def print_deposit(self):
         return f"${self._deposit:,.2f}"
 
     def print_charge(self):
         return f"${self._charge:,.2f}"
+
+    def print_tax(self):
+        return f"${self._tax:,.2f}"
 
     def length(self):
         return (self.date_started - self.date_ended).days

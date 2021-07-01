@@ -121,7 +121,8 @@ class Models(AbstractModels):
             print("Data: ", data)
             print("Database cursor: ", Models.database.cursor)
 
-        primary_key = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
+        result = Models.database.cursor.fetchone()
+        primary_key = sql_to_dictionary(Models.database.cursor, result)
         if len(primary_key.keys()) == 1:
             primary_key, = primary_key.values()
         new_entry = cls.get(primary_key)
@@ -131,6 +132,7 @@ class Models(AbstractModels):
     def get(cls, id):
         debug = Models.database._debug
 
+        obj = None
         SQL = f"SELECT * FROM {cls.table_name} WHERE id = %s;" # Note: no quotes
         data = (id, )
         Models.database.cursor.execute(SQL, data)
@@ -139,9 +141,11 @@ class Models(AbstractModels):
             print("SQL command: ", SQL)
             print("Data: ", data)
             print("Database cursor: ", Models.database.cursor)
-
-        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return cls(db_obj)
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_obj = sql_to_dictionary(Models.database.cursor, result)
+            obj = cls(db_obj)
+        return obj
 
     @classmethod
     def get_all(cls):
@@ -155,7 +159,8 @@ class Models(AbstractModels):
             print("Database cursor (fetch sample): ", Models.database.cursor)
 
         obj_list = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_obj = sql_to_dictionary(Models.database.cursor, query)
             obj_list.append(cls(db_obj))
         return obj_list
@@ -192,7 +197,8 @@ class Models(AbstractModels):
             print("Database cursor (fetch sample): ", Models.database.cursor)
 
         obj_list = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_obj = sql_to_dictionary(Models.database.cursor, query)
             obj_list.append(cls(db_obj))
         return obj_list # query here
@@ -211,7 +217,8 @@ class Models(AbstractModels):
             print("Database cursor (fetch sample): ", Models.database.cursor)
 
         obj_list = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_obj = sql_to_dictionary(Models.database.cursor, query)
             obj_list.append(cls(db_obj))
         return obj_list

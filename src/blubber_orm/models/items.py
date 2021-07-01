@@ -112,7 +112,8 @@ class Items(Models, AddressModelDecorator):
         data = (address.num, address.street, address.apt, address.zip_code)
         Models.database.cursor.execute(SQL, data)
         items = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_item = sql_to_dictionary(Models.database.cursor, query)
             items.append(Items(db_item))
         return items
@@ -124,7 +125,8 @@ class Items(Models, AddressModelDecorator):
         data = (zip_code, )
         Models.database.cursor.execute(SQL, data)
         items = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_item = sql_to_dictionary(Models.database.cursor, query)
             items.append(Items(db_item))
         return items
@@ -136,7 +138,8 @@ class Items(Models, AddressModelDecorator):
         data = (lister.id, )
         Models.database.cursor.execute(SQL, data)
         items = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_item = sql_to_dictionary(Models.database.cursor, query)
             items.append(Items(db_item))
         return items
@@ -148,7 +151,8 @@ class Items(Models, AddressModelDecorator):
         Models.database.cursor.execute(SQL, data)
         items = []
         db_items = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_item_by_tag = sql_to_dictionary(Models.database.cursor, query)
             db_items.append(db_item_by_tag)
 
@@ -230,9 +234,7 @@ class Details(Models, ItemModelDecorator):
     def abbreviate(self, max_chars=127):
         abbreviation = ''
         if len(self.description) > max_chars:
-            for i in range(max_chars):
-                abbreviation += self.description[i]
-            abbreviation += "..."
+            abbreviation = self.description[:max_chars] + "..."
         else:
             abbreviation = self.description
         return abbreviation
@@ -328,7 +330,7 @@ class Calendars(Models, ItemModelDecorator):
         if bookings is None:
             bookings = self.reservations
             bookings.sort(key = lambda res: res.date_ended)
-        _bookings = [res for res in bookings]
+        _bookings = bookings.copy()
         if len(_bookings) > 0:
             comparison_res = _bookings.pop(0)
             if comparison_res.date_ended <= new_res.date_started:

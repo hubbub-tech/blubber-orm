@@ -37,6 +37,7 @@ class Addresses(Models):
 
     @classmethod
     def get(cls, address_keys):
+        address = None
         SQL = """
             SELECT * FROM addresses
                 WHERE num = %s AND street = %s AND apt = %s AND zip = %s;""" # Note: no quotes
@@ -46,8 +47,11 @@ class Addresses(Models):
             address_keys['apt'],
             address_keys['zip'])
         Models.database.cursor.execute(SQL, data)
-        db_address = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return Addresses(db_address) # query here
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_address = sql_to_dictionary(Models.database.cursor, result)
+            address = Addresses(db_address)
+        return address # query here
 
     #TODO: Addresses shouldnt change once created
     @classmethod

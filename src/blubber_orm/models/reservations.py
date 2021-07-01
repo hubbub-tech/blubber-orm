@@ -100,6 +100,7 @@ class Reservations(Models):
 
     @classmethod
     def get(cls, reservation_keys):
+        res = None
         SQL = """
             SELECT * FROM reservations
                 WHERE date_started = %s
@@ -112,8 +113,11 @@ class Reservations(Models):
             reservation_keys['renter_id'],
             reservation_keys['item_id'])
         Models.database.cursor.execute(SQL, data)
-        db_reservation = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return Reservations(db_reservation)
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_reservation = sql_to_dictionary(Models.database.cursor, result)
+            res = Reservations(db_reservation)
+        return res
 
     @classmethod
     def delete(cls, reservation_keys):

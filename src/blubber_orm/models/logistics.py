@@ -38,11 +38,15 @@ class Logistics(Models, AddressModelDecorator):
 
     @classmethod
     def get(cls, logistics_keys):
+        logistics = None
         SQL = "SELECT * FROM logistics WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (logistics_keys["dt_sched"], logistics_keys["renter_id"])
         Models.database.cursor.execute(SQL, data)
-        db_logistics = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return Logistics(db_logistics)
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_logistics = sql_to_dictionary(Models.database.cursor, result)
+            logistics = Logistics(db_logistics)
+        return logistics
 
     @classmethod
     def set(cls, logistics_keys, changes):
@@ -84,11 +88,15 @@ class Pickups(Models):
 
     @classmethod
     def by_order(cls, order):
+        pickup = None
         SQL = "SELECT pickup_date, dt_sched, renter_id FROM order_pickups WHERE order_id = %s;" # Note: no quotes
         data = (order.id, )
         Models.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return Pickups.get(db_obj)
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_pickup = sql_to_dictionary(Models.database.cursor, result)
+            pickup = Pickups.get(db_pickup)
+        return pickup
 
     @classmethod
     def mark_as_delivered(order):
@@ -107,11 +115,15 @@ class Pickups(Models):
 
     @classmethod
     def get(cls, pickup_keys):
+        pickup = None
         SQL = "SELECT * FROM pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (pickup_keys["pickup_date"], pickup_keys["dt_sched"], pickup_keys["renter_id"])
         Models.database.cursor.execute(SQL, data)
-        db_pickup = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return Pickups(db_pickup)
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_pickup = sql_to_dictionary(Models.database.cursor, result)
+            pickup = Pickups(db_pickup)
+        return pickup
 
     @classmethod
     def set(cls, pickup_keys, changes):
@@ -165,11 +177,15 @@ class Dropoffs(Models):
 
     @classmethod
     def by_order(cls, order):
+        dropoff = None
         SQL = "SELECT dropoff_date, dt_sched, renter_id FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
         data = (order.id, )
         Models.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return Dropoffs.get(db_obj)
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_dropoff = sql_to_dictionary(Models.database.cursor, result)
+            dropoff = Dropoffs.get(db_dropoff)
+        return dropoff
 
     @classmethod
     def mark_as_delivered(order):
@@ -188,11 +204,15 @@ class Dropoffs(Models):
 
     @classmethod
     def get(cls, dropoff_keys):
+        dropoff = None
         SQL = "SELECT * FROM dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (dropoff_keys["dropoff_date"], dropoff_keys["dt_sched"], dropoff_keys["renter_id"])
         Models.database.cursor.execute(SQL, data)
-        db_dropoff = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return Dropoffs(db_dropoff)
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_dropoff = sql_to_dictionary(Models.database.cursor, result)
+            dropoff = Dropoffs(db_dropoff)
+        return dropoff
 
     @classmethod
     def set(cls, dropoff_keys, changes):

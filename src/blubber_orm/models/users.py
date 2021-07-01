@@ -126,7 +126,8 @@ class Users(Models, AddressModelDecorator):
 
         listers = []
         db_lister_ids = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_lister = sql_to_dictionary(Models.database.cursor, query)
             db_lister_ids.append(db_lister)
 
@@ -142,7 +143,8 @@ class Users(Models, AddressModelDecorator):
 
         renters = []
         db_renter_ids = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_renter = sql_to_dictionary(Models.database.cursor, query)
             db_renter_ids.append(db_renter)
 
@@ -171,7 +173,8 @@ class Users(Models, AddressModelDecorator):
         data = (address.num, address.street, address.apt, address.zip_code)
         Models.database.cursor.execute(SQL, data)
         users = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_user = sql_to_dictionary(Models.database.cursor, query)
             users.append(Users(db_user))
         return users
@@ -183,7 +186,8 @@ class Users(Models, AddressModelDecorator):
         data = (zip_code, )
         Models.database.cursor.execute(SQL, data)
         users = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_user = sql_to_dictionary(Models.database.cursor, query)
             users.append(Users(db_user))
         return users
@@ -193,20 +197,14 @@ class Users(Models, AddressModelDecorator):
         SQL = "SELECT * FROM renters WHERE renter_id = %s;" # Note: no quotes
         data = (user.id, )
         Models.database.cursor.execute(SQL, data)
-        if Models.database.cursor.fetchone():
-            return True
-        else:
-            return False
+        return Models.database.cursor.fetchone() is not None
 
     @classmethod
     def search_lister(cls, user):
         SQL = "SELECT * FROM listers WHERE lister_id = %s;" # Note: no quotes
         data = (user.id, )
         Models.database.cursor.execute(SQL, data)
-        if Models.database.cursor.fetchone():
-            return True
-        else:
-            return False
+        return Models.database.cursor.fetchone() is not None
 
     def make_renter(self):
         #ASSERT user is not already in the renters table

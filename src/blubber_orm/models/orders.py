@@ -91,20 +91,26 @@ class Orders(Models, ReservationModelDecorator):
 
     @classmethod
     def by_pickup(cls, pickup):
+        order = None
         SQL = "SELECT order_id FROM order_pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (pickup.date_pickup, pickup.dt_sched, pickup.renter_id)
         Models.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
-        order = Orders.get(db_obj["order_id"])
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_order = sql_to_dictionary(Models.database.cursor, result) #NOTE is this just {"order_id": order_id}?
+            order = Orders.get(db_order["order_id"])
         return order
 
     @classmethod
     def by_dropoff(cls, dropoff):
+        order = None
         SQL = "SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (dropoff.date_dropoff, dropoff.dt_sched, dropoff.renter_id)
         Models.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone()) #NOTE is this just {"order_id": order_id}?
-        order = Orders.get(db_obj["order_id"])
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_order = sql_to_dictionary(Models.database.cursor, result) #NOTE is this just {"order_id": order_id}?
+            order = Orders.get(db_order["order_id"])
         return order
 
     def refresh(self):
@@ -132,11 +138,15 @@ class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
 
     @classmethod
     def get(cls, extension_keys):
+        ext = None
         SQL = "SELECT * FROM extensions WHERE order_id = %s AND res_date_end = %s;" # Note: no quotes
         data = (extension_keys['order_id'], extension_keys['res_date_end'])
         Models.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return Extensions(db_obj)
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_ext = sql_to_dictionary(Models.database.cursor, result)
+            ext = Extensions(db_ext)
+        return ext
 
     @classmethod
     def set(cls):

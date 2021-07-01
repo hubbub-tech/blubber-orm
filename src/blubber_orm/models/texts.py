@@ -26,7 +26,8 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
         data = (user.id, )
         Models.database.cursor.execute(SQL, data)
         reviews = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_review = sql_to_dictionary(Models.database.cursor, query)
             reviews.append(Reviews(db_review))
         return reviews
@@ -38,7 +39,8 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
         data = (item.id, )
         Models.database.cursor.execute(SQL, data)
         reviews = []
-        for query in Models.database.cursor.fetchall():
+        results = Models.database.cursor.fetchall()
+        for query in results:
             db_review = sql_to_dictionary(Models.database.cursor, query)
             reviews.append(Reviews(db_review))
         return reviews
@@ -56,11 +58,15 @@ class Testimonials(Models, UserModelDecorator):
 
     @classmethod
     def get(cls, testimonial_keys):
+        testimonial = None
         SQL = "SELECT * FROM testimonials WHERE date_created = %s AND user_id = %s;" # Note: no quotes
         data = (testimonial_keys["date_created"], testimonial_keys["user_id"])
         Models.database.cursor.execute(SQL, data)
-        db_testimonial = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return Testimonials(db_testimonial)
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_testimonial = sql_to_dictionary(Models.database.cursor, result)
+            testimonial = Testimonials(db_testimonial)
+        return testimonial
 
     @classmethod
     def set(cls):
@@ -92,22 +98,22 @@ class Tags(Models):
         data = (item.id, )
         Models.database.cursor.execute(SQL, data)
         tags = []
-        db_tags = []
         for query in Models.database.cursor.fetchall():
             db_tag_by_item = sql_to_dictionary(Models.database.cursor, query)
-            db_tags.append(db_tag_by_item)
-
-        for db_tag_by_item in db_tags:
-            tags.append(Tags.get(db_tag_by_item["tag_name"]))
-        return items
+            tags.append(Tags(db_tag_by_item))
+        return tags
 
     @classmethod
     def get(cls, tag_name):
+        tag = None
         SQL = "SELECT * FROM tags WHERE tag_name = %s;" # Note: no quotes
         data = (tag_name, )
         Models.database.cursor.execute(SQL, data)
-        db_obj = sql_to_dictionary(Models.database.cursor, Models.database.cursor.fetchone())
-        return Tags(db_obj)
+        result = Models.database.cursor.fetchone()
+        if result:
+            db_tag = sql_to_dictionary(Models.database.cursor, result)
+            tag = Tags(db_tag)
+        return
 
     @classmethod
     def set(cls):

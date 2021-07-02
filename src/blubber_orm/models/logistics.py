@@ -99,13 +99,13 @@ class Pickups(Models):
         return pickup
 
     @classmethod
-    def mark_as_delivered(order):
+    def mark_as_collected(order):
         #ASSERT object is type order
-        #Check to make sure there is a complete dropoff row
-        #Check to see if order and dropoff are associated in order_dropoffs
+        #Check to make sure there is a complete pickup row
+        #Check to see if order and pickup are associated in order_pickups
         pickup = Pickups.by_order(order)
         if pickup:
-            #Change dropoff dt_completed to current time
+            #Change pickup dt_completed to current time
             SQL = "UPDATE order_pickups SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
             data = (datetime.now(tz=pytz.UTC), order.id)
             Models.database.cursor.execute(SQL, data)
@@ -153,6 +153,19 @@ class Pickups(Models):
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
             order.is_pickup_scheduled = True
+
+    def cancel_pickup(self, order):
+        SQL = "DELETE FROM order_pickups WHERE order_id = %s;" # Note: no quotes
+        data = (order.id, )
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
+
+        SQL = "SELECT * FROM order_pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;"
+        data = (self.pickup_date, self.dt_scheduled, self.renter_id)
+        Models.database.cursor.execute(SQL, data)
+        if Models.database.cursor.fetchone() is None:
+            Logistics.delete({"dt_sched": self.dt_scheduled, "renter_id": self.renter_id})
+        Orders.set(order.id, {"is_pickup_sched": False})
 
     def refresh(self):
         pickup_keys = {
@@ -242,6 +255,19 @@ class Dropoffs(Models):
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
             order.is_dropoff_scheduled = True
+
+    def cancel_dropoff(self, order):
+        SQL = "DELETE FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
+        data = (order.id, )
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
+
+        SQL = "SELECT * FROM order_dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;"
+        data = (self.dropoff_date, self.dt_scheduled, self.renter_id)
+        Models.database.cursor.execute(SQL, data)
+        if Models.database.cursor.fetchone() is None:
+            Logistics.delete({"dt_sched": self.dt_scheduled, "renter_id": self.renter_id})
+        Orders.set(order.id, {"is_dropoff_sched": False})
 
     def refresh(self):
         dropoff_keys = {

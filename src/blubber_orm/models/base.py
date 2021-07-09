@@ -311,3 +311,6 @@ class Models(AbstractModels):
     def __repr__(self):
         model = self.table_name.capitalize()
         return f"<type: {model}>"
+
+    def __eq__(self, other) :
+        return self.__dict__ == other.__dict__

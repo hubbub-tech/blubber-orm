@@ -21,6 +21,7 @@ class Orders(Models, ReservationModelDecorator):
     table_name = "orders"
     table_primaries = ["id"]
 
+    _ext_date_start = None
     _ext_date_end = None
 
     _res_date_start = None
@@ -41,6 +42,17 @@ class Orders(Models, ReservationModelDecorator):
         self._res_date_end = db_data["res_date_end"]
         self._res_renter_id = db_data["renter_id"]
         self._res_item_id = db_data["item_id"]
+
+    @property
+    def ext_date_start(self):
+        """Get the true end date for the order, extensions considered."""
+        extensions = self.extensions
+        if extensions:
+            extensions.sort(key = lambda ext: ext._res_date_end)
+            self._ext_date_start = extensions[-1]._res_date_start
+        else:
+            self._ext_date_start = self._res_date_start
+        return self._ext_date_start
 
     @property
     def ext_date_end(self):
@@ -95,11 +107,11 @@ class Orders(Models, ReservationModelDecorator):
         SQL = "SELECT order_id FROM order_pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (pickup.date_pickup, pickup.dt_sched, pickup.renter_id)
         Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
-        if result:
-            db_order = sql_to_dictionary(Models.database.cursor, result) #NOTE is this just {"order_id": order_id}?
-            order = Orders.get(db_order["order_id"])
-        return order
+        results = [id for id in Models.database.cursor.fetchall()]
+        orders = []
+        if order_id in results:
+            orders.append(Orders.get(order_id))
+        return orders
 
     @classmethod
     def by_dropoff(cls, dropoff):
@@ -107,11 +119,11 @@ class Orders(Models, ReservationModelDecorator):
         SQL = "SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
         data = (dropoff.date_dropoff, dropoff.dt_sched, dropoff.renter_id)
         Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
-        if result:
-            db_order = sql_to_dictionary(Models.database.cursor, result) #NOTE is this just {"order_id": order_id}?
-            order = Orders.get(db_order["order_id"])
-        return order
+        results = [id for id in Models.database.cursor.fetchall()]
+        orders = []
+        if order_id in results:
+            orders.append(Orders.get(order_id))
+        return orders
 
     def refresh(self):
         self = Orders.get(self.id)

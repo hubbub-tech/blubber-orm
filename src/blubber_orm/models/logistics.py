@@ -154,7 +154,7 @@ class Pickups(Models):
             Models.database.connection.commit()
             order.is_pickup_scheduled = True
 
-    def cancel_pickup(self, order):
+    def cancel(self, order):
         SQL = "DELETE FROM order_pickups WHERE order_id = %s;" # Note: no quotes
         data = (order.id, )
         Models.database.cursor.execute(SQL, data)
@@ -165,7 +165,7 @@ class Pickups(Models):
         Models.database.cursor.execute(SQL, data)
         if Models.database.cursor.fetchone() is None:
             Logistics.delete({"dt_sched": self.dt_scheduled, "renter_id": self.renter_id})
-        Orders.set(order.id, {"is_pickup_sched": False})
+        order.is_pickup_scheduled = False
 
     def refresh(self):
         pickup_keys = {
@@ -256,7 +256,7 @@ class Dropoffs(Models):
             Models.database.connection.commit()
             order.is_dropoff_scheduled = True
 
-    def cancel_dropoff(self, order):
+    def cancel(self, order):
         SQL = "DELETE FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
         data = (order.id, )
         Models.database.cursor.execute(SQL, data)
@@ -267,7 +267,7 @@ class Dropoffs(Models):
         Models.database.cursor.execute(SQL, data)
         if Models.database.cursor.fetchone() is None:
             Logistics.delete({"dt_sched": self.dt_scheduled, "renter_id": self.renter_id})
-        Orders.set(order.id, {"is_dropoff_sched": False})
+        order.is_dropoff_scheduled = False
 
     def refresh(self):
         dropoff_keys = {

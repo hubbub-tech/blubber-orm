@@ -39,6 +39,7 @@ CREATE TABLE profiles (
 CREATE TABLE carts (
   total float DEFAULT 0.0,
   total_deposit float DEFAULT 0.0, -- Ade 5/4 - needed a way to track deposits as well
+  total_tax float DEFAULT 0.0,
   id integer, -- user id
   PRIMARY KEY (id),
   FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE
@@ -113,7 +114,7 @@ CREATE TABLE reservations (
   item_id integer,
   charge float,
   deposit float,
-  tax, float,
+  tax float,
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
   PRIMARY KEY (date_started, date_ended, renter_id, item_id),
   FOREIGN KEY (renter_id) REFERENCES users (id) ON DELETE CASCADE,
@@ -135,7 +136,6 @@ CREATE TABLE orders (
   FOREIGN KEY (lister_id) REFERENCES listers (lister_id),
   FOREIGN KEY (res_date_start, res_date_end, renter_id, item_id) REFERENCES reservations (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE
 );
-
 
 CREATE TABLE reviews (
   id SERIAL,

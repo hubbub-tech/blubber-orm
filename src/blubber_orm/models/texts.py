@@ -45,6 +45,9 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
             reviews.append(Reviews(db_review))
         return reviews
 
+    def refresh(self):
+        self = Reviews.get(self.id)
+
 class Issues(Models, UserModelDecorator):
     table_name = "issues"
     table_primaries = ["id"]
@@ -74,6 +77,9 @@ class Issues(Models, UserModelDecorator):
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
         self.is_resolved = False
+
+    def refresh(self):
+        self = Issues.get(self.id)
 
 class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"

@@ -18,6 +18,7 @@ from .models import Logistics
 from .models import Tags
 from .models import Reviews
 from .models import Testimonials
+from .models import Issues
 
 from .ops import *
 

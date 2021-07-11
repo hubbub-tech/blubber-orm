@@ -45,6 +45,36 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
             reviews.append(Reviews(db_review))
         return reviews
 
+class Issues(Models, UserModelDecorator):
+    table_name = "issues"
+    table_primaries = ["id"]
+
+    user_id = None
+
+    def __init__(self, db_data):
+        self.id = db_data["id"]
+        self.link = db_data["link"]
+        self.complaint = db_data["complaint"]
+        self.resolution = db_data["resolution"]
+        self.is_resolved = db_data["is_resolved"]
+        self.dt_created = db_data["dt_created"]
+        self.user_id = db_data["user_id"]
+
+    def close(self, comments=None):
+        SQL = "UPDATE issues SET is_resolved = %s, resolution = %s WHERE id = %s;" # Note: no quotes
+        data = (True, comments, self.id)
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
+        self.resolution = comments
+        self.is_resolved = True
+
+    def open(self):
+        SQL = "UPDATE issues SET is_resolved = %s WHERE id = %s;" # Note: no quotes
+        data = (False, self.id)
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
+        self.is_resolved = False
+
 class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"
     table_primaries = ["date_created", "user_id"]

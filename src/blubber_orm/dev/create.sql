@@ -1,7 +1,7 @@
 --\i Projects/hubbub/hubbub_ops/create.sql
 
  CREATE TABLE addresses (
-  num real,
+  num integer,
   street varchar(100),
   apt varchar(10) DEFAULT '',
   city varchar(100),
@@ -234,5 +234,18 @@ CREATE TABLE order_dropoffs (
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
   FOREIGN KEY (dropoff_date, dt_sched, renter_id) REFERENCES dropoffs (dropoff_date, dt_sched, renter_id) ON DELETE CASCADE
 );
+
+CREATE TABLE issues (
+  id SERIAL,
+  complaint text,
+  link varchar(100),
+  user_id integer,
+  resolution text,
+  is_resolved boolean DEFAULT FALSE,
+  dt_created timestamp DEFAULT LOCALTIMESTAMP,
+  PRIMARY KEY (id),
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
 -- needed to drop the following--see data migration notes - caro 5/4
 -- ALTER TABLE extensions ADD CONSTRAINT chk_ext_date CHECK (ext_date_end > localtimestamp);

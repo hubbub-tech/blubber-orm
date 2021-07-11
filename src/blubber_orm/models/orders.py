@@ -105,11 +105,11 @@ class Orders(Models, ReservationModelDecorator):
     def by_pickup(cls, pickup):
         order = None
         SQL = "SELECT order_id FROM order_pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        data = (pickup.date_pickup, pickup.dt_sched, pickup.renter_id)
+        data = (pickup.pickup_date, pickup.dt_scheduled, pickup.renter_id)
         Models.database.cursor.execute(SQL, data)
         results = [id for id in Models.database.cursor.fetchall()]
         orders = []
-        if order_id in results:
+        for order_id in results:
             orders.append(Orders.get(order_id))
         return orders
 
@@ -117,11 +117,11 @@ class Orders(Models, ReservationModelDecorator):
     def by_dropoff(cls, dropoff):
         order = None
         SQL = "SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        data = (dropoff.date_dropoff, dropoff.dt_sched, dropoff.renter_id)
+        data = (dropoff.dropoff_date, dropoff.dt_scheduled, dropoff.renter_id)
         Models.database.cursor.execute(SQL, data)
         results = [id for id in Models.database.cursor.fetchall()]
         orders = []
-        if order_id in results:
+        for order_id in results:
             orders.append(Orders.get(order_id))
         return orders
 

@@ -284,7 +284,7 @@ class Models(AbstractModels):
                     _serializable_dict[key] = value.strftime("%Y-%m-%d %H:%M:%S.%f")
                 elif isinstance(value, date):
                     _serializable_dict[key] = value.strftime("%Y-%m-%d")
-                else:
+                elif key not in ["password"]:
                     _serializable_dict[key] = value
             _self_dict = _serializable_dict
         return _self_dict

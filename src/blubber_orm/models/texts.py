@@ -149,7 +149,7 @@ class Tags(Models):
         if result:
             db_tag = sql_to_dictionary(Models.database.cursor, result)
             tag = Tags(db_tag)
-        return
+        return tag
 
     @classmethod
     def set(cls):

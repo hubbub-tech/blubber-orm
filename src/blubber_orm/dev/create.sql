@@ -19,6 +19,7 @@ CREATE TABLE users (
   dt_joined timestamp DEFAULT LOCALTIMESTAMP,
   dt_last_active timestamp DEFAULT LOCALTIMESTAMP,
   is_blocked boolean DEFAULT FALSE,
+  session varchar(20),
   address_num integer,
   address_street varchar(100),
   address_apt varchar(50),

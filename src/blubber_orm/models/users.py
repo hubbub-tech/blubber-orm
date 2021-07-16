@@ -36,6 +36,7 @@ class Users(Models, AddressModelDecorator):
         self.dt_joined = db_data["dt_joined"]
         self._dt_last_active = db_data["dt_last_active"]
         self._is_blocked = db_data["is_blocked"]
+        self._session = db_data["session"]
         #address
         self._address_num = db_data["address_num"]
         self._address_street = db_data["address_street"]
@@ -101,6 +102,18 @@ class Users(Models, AddressModelDecorator):
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
         self._is_blocked = is_blocked
+
+    @property
+    def session(self):
+        return self._session
+
+    @session.setter
+    def session(self, new_session):
+        SQL = "UPDATE users SET session = %s WHERE id = %s;" # Note: no quotes
+        data = (new_session, self.id)
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
+        self._session = new_session
 
     @property
     def cart(self):

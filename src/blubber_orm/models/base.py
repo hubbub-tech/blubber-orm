@@ -1,4 +1,5 @@
 import json
+import psycopg2
 from datetime import datetime, date
 from abc import ABC, abstractmethod
 from .db import DatabaseConnection, sql_to_dictionary
@@ -113,7 +114,23 @@ class Models(AbstractModels):
         primaries_str = ", ".join(cls.table_primaries)
         SQL = f"INSERT INTO {cls.table_name} ({attributes_str}) VALUES ({placeholders_str}) RETURNING {primaries_str};"
         data = tuple(attributes.values())
-        Models.database.cursor.execute(SQL, data)
+
+        if cls.table_name in ["users", "items", "orders", "reviews", "issues"]:
+            while True:
+                try:
+                    Models.database.cursor.execute(SQL, data)
+                    print(SQL, data)
+                    break
+                except psycopg2.errors.InFailedSqlTransaction as e:
+                    Models.database.connection.rollback()
+                    continue
+                except psycopg2.errors.UniqueViolation as e:
+                    print(e)
+                    continue
+                except Exception as e:
+                    print(e)
+        else:
+            Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
 
         if debug:

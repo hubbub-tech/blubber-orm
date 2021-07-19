@@ -13,3 +13,4 @@ build/
 .env
 todo.txt
 cheat.txt
+src/blubber_orm/dev/error.log

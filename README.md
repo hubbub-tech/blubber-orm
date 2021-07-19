@@ -1,87 +1,52 @@
 # Hubbub Blubber
 
-Blubber is an internal object relational mapper for Hubbub's marketplace database. This is important for consistent object structure across all of Hubbub's projects. It's called 'Blubber' because it's a thick layer on raw data :)
+Notice - this package is only compatible with Hubbub projects.
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+Blubber is an internal object relational mapper for Hubbub's marketplace database. This is important for consistent object structure across all of Hubbub's projects. It's called 'Blubber' because it's a thick layer on raw data (lol)
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
+Blubber requires you to define two variables in your environment: 'BLUBBER_DEBUG' and 'DATABASE_URL'.
+
+'DATABASE_URL' must be a postgresql URL formatted as 'postgresql://NAME:PASSWORD@HOST:PORT/USER'.
+'BLUBBER_DEBUG' takes a value of '0' for FALSE or '1' for TRUE. Set these before using, and Blubber will run smoothly:
 
 ```
-Give examples
+export BLUBBER_DEBUG=1
+export DATABASE_URL=postgresql://fakeDB:fakePassword@localhost:5432/fakeUser
 ```
 
 ### Installing
 
-A step by step series of examples that tell you how to get a development env running
-
-Say what the step will be
+Run the following command in terminal to install the python package:
 
 ```
-Give the example
+pip3 install blubber-orm
 ```
 
-And repeat
+## About BLUBBER_DEBUG
 
-```
-until finished
-```
+In debug mode, Blubber will print all of your queries to terminal. In a future release, these outputs will also catch errors and can be configured to log to a file or email to an admin.
 
-End with an example of getting some data out of the system or using it for a little demo
+### Developer Tools
 
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
+Create a play-version of the Hubbub database and fill it with dummy data under /src/blubber_orm/dev!
 
 ## Built With
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+* [psycopg2](https://www.psycopg.org/docs/) - The engine for running posgresql queries
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags).
+Blubber is currently not taking contributions. This policy may change in the future.
 
 ## Authors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+* **Ade Balogun** - *Initial work* - [Baloguna16](https://github.com/Baloguna16)
+* **Caro Perez** - *Initial work* - [avocaro-tech](https://github.com/avocaro-tech)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
+This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LICENSE.md) file for details

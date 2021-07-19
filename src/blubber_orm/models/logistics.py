@@ -111,7 +111,7 @@ class Pickups(Models):
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
         else:
-            raise Exception(f"No pickup object is associated with <Order {order.id}>.")
+            raise Exception(f"No pickup object is associated with <Orders {order.id}>.")
 
     @classmethod
     def get(cls, pickup_keys):
@@ -213,7 +213,7 @@ class Dropoffs(Models):
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
         else:
-            raise Exception(f"No dropoff object is associated with <Order {order.id}>.")
+            raise Exception(f"No dropoff object is associated with <Orders {order.id}>.")
 
     @classmethod
     def get(cls, dropoff_keys):

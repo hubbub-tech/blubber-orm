@@ -325,8 +325,13 @@ class Calendars(Models, ItemModelDecorator):
                     return [self.date_started, bookings[0].date_started]
                 else:
                     return [bookings[i].date_ended, self.date_ended]
+            elif closest_operating_date < self.date_ended:
+                if closest_operating_date > bookings[i].date_ended:
+                    return [closest_operating_date, self.date_ended]
+                else:
+                    return [bookings[i].date_ended, self.date_ended]
             else:
-                return [bookings[i].date_ended, self.date_ended]
+                return [closest_operating_date, closest_operating_date]
 
     #schedules a reservation if valid, returns false if not, returns none if expired item
     def scheduler(self, new_res, bookings=None):

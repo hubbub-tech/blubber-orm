@@ -314,7 +314,10 @@ class Calendars(Models, ItemModelDecorator):
         for i in range(self.size()):
             if i + 1 < self.size():
                 if bookings[i].date_ended < bookings[i + 1].date_started:
-                    return [bookings[i].date_ended, bookings[i + 1].date_started]
+                    if closest_operating_date < bookings[i].date_ended:
+                        return [bookings[i].date_ended, bookings[i + 1].date_started] # Original
+                    elif closest_operating_date < bookings[i + 1].date_started:
+                        return [closest_operating_date, bookings[i + 1].date_started]
             elif bookings[0].date_started > closest_operating_date:
                 if closest_operating_date >= self.date_started:
                     return [closest_operating_date, bookings[0].date_started]

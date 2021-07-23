@@ -353,7 +353,7 @@ class Carts(Models, UserModelDecorator):
         self._contents = None
 
     def remove_without_reservation(self, item):
-        """This is a non-commital add to cart where the user doesn't have to reserve immediately."""
+        """This resolves the non-commital 'add to cart' where the user didn't reserve."""
         #ASSERT reservation.item_id is NOT associated with cart_id
         SQL = "DELETE FROM shopping WHERE cart_id = %s AND item_id = %s;" #does this return a tuple or single value?
         data = (self.user_id, item.id) #sensitive to tuple order
@@ -362,7 +362,7 @@ class Carts(Models, UserModelDecorator):
 
     #NOTE to add a reservation to this later, "remove_without_reservation()" then re-add with "add()"
     def add_without_reservation(self, item):
-        """This resolves the non-commital 'add to cart' where the user didn't reserve."""
+        """This is a non-commital add to cart where the user doesn't have to reserve immediately."""
         #ASSERT reservation.item_id is NOT associated with cart_id
         SQL = "INSERT INTO shopping (cart_id, item_id) VALUES (%s, %s);" #does this return a tuple or single value?
         data = (self.user_id, item.id) #sensitive to tuple order

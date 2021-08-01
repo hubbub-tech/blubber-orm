@@ -56,7 +56,7 @@ class Reservations(Models):
 
     def print_total(self):
         """This is how much user must pay = charge + deposit + tax"""
-        return self._charge + self._deposit + self._tax
+        return f"${self._charge + self._deposit + self._tax:,.2f}"
 
     def print_deposit(self):
         return f"${self._deposit:,.2f}"

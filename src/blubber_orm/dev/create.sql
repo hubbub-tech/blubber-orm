@@ -3,7 +3,7 @@
  CREATE TABLE addresses (
   num integer,
   street varchar(100),
-  apt varchar(10) DEFAULT '',
+  apt varchar(50) DEFAULT '',
   city varchar(100),
   state varchar(50),
   zip varchar(10),

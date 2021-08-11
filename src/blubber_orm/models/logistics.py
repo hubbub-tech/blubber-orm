@@ -87,6 +87,15 @@ class Pickups(Models):
         return Logistics.get(keys)
 
     @classmethod
+    def dt_completed(cls, order):
+        dt_completed = None
+        SQL = "SELECT dt_completed FROM order_pickups WHERE order_id = %s;" # Note: no quotes
+        data = (order.id,)
+        Models.database.cursor.execute(SQL, data)
+        dt_completed = Models.database.cursor.fetchone() # Should return 'None' if no dt_completed
+        return dt_completed
+
+    @classmethod
     def by_order(cls, order):
         pickup = None
         SQL = "SELECT pickup_date, dt_sched, renter_id FROM order_pickups WHERE order_id = %s;" # Note: no quotes
@@ -187,6 +196,15 @@ class Dropoffs(Models):
     def logistics(self):
         keys = {"dt_sched": self.dt_scheduled, "renter_id": self.renter_id}
         return Logistics.get(keys)
+
+    @classmethod
+    def dt_completed(cls, order):
+        dt_completed = None
+        SQL = "SELECT dt_completed FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
+        data = (order.id,)
+        Models.database.cursor.execute(SQL, data)
+        dt_completed = Models.database.cursor.fetchone() # Should return 'None' if no dt_completed
+        return dt_completed
 
     @classmethod
     def by_order(cls, order):

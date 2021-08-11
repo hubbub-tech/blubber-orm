@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='blubber_orm',
-      version='0.5.5',
+      version='0.5.6',
       description='Custom ORM for Hubbub DB',
       url='https://github.com/hubbub-tech/blubber-orm',
       author='Ade Balogun',

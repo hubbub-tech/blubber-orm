@@ -1,6 +1,6 @@
 import json
 import psycopg2
-from datetime import datetime, date
+from datetime import datetime, date, time
 from abc import ABC, abstractmethod
 from .db import DatabaseConnection, sql_to_dictionary
 
@@ -301,6 +301,8 @@ class Models(AbstractModels):
                     _serializable_dict[key] = value.strftime("%Y-%m-%d %H:%M:%S.%f")
                 elif isinstance(value, date):
                     _serializable_dict[key] = value.strftime("%Y-%m-%d")
+                elif isinstance(value, time):
+                    _serializable_dict[key] = value.strftime("%H:%M")
                 elif key not in ["password", "session"]:
                     _serializable_dict[key] = value
             _self_dict = _serializable_dict

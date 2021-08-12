@@ -92,7 +92,7 @@ class Pickups(Models):
         SQL = "SELECT dt_completed FROM order_pickups WHERE order_id = %s;" # Note: no quotes
         data = (order.id,)
         Models.database.cursor.execute(SQL, data)
-        dt_completed = Models.database.cursor.fetchone() # Should return 'None' if no dt_completed
+        dt_completed = Models.database.cursor.fetchone()[0] # Returns 'None' if no dt_completed
         return dt_completed
 
     @classmethod
@@ -203,7 +203,7 @@ class Dropoffs(Models):
         SQL = "SELECT dt_completed FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
         data = (order.id,)
         Models.database.cursor.execute(SQL, data)
-        dt_completed = Models.database.cursor.fetchone() # Should return 'None' if no dt_completed
+        dt_completed = Models.database.cursor.fetchone()[0] # Returns 'None' if no dt_completed
         return dt_completed
 
     @classmethod

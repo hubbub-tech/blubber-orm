@@ -206,6 +206,13 @@ class Users(Models, AddressModelDecorator):
         return users
 
     @classmethod
+    def search_courier(cls, user):
+        SQL = "SELECT * FROM couriers WHERE courier_id = %s;" # Note: no quotes
+        data = (user.id, )
+        Models.database.cursor.execute(SQL, data)
+        return Models.database.cursor.fetchone() is not None
+
+    @classmethod
     def search_renter(cls, user):
         SQL = "SELECT * FROM renters WHERE renter_id = %s;" # Note: no quotes
         data = (user.id, )

@@ -98,6 +98,12 @@ CREATE TABLE listers (
   FOREIGN KEY (lister_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+CREATE TABLE couriers (
+  courier_id integer,
+  PRIMARY KEY (courier_id),
+  FOREIGN KEY (courier_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
 CREATE TABLE renters (
   renter_id integer,
   PRIMARY KEY (renter_id),

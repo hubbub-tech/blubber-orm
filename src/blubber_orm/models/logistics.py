@@ -108,7 +108,7 @@ class Pickups(Models):
         return pickup
 
     @classmethod
-    def mark_as_collected(order):
+    def mark_as_collected(cls, order):
         #ASSERT object is type order
         #Check to make sure there is a complete pickup row
         #Check to see if order and pickup are associated in order_pickups
@@ -219,7 +219,7 @@ class Dropoffs(Models):
         return dropoff
 
     @classmethod
-    def mark_as_delivered(order):
+    def mark_as_delivered(cls, order):
         #ASSERT object is type order
         #Check to make sure there is a complete dropoff row
         #Check to see if order and dropoff are associated in order_dropoffs

@@ -56,16 +56,16 @@ class Reservations(Models):
 
     def print_total(self):
         """This is how much user must pay = charge + deposit + tax"""
-        return f"${self._charge + self._deposit + self._tax:,.2f}"
+        return f"${round(self._charge + self._deposit + self._tax, 2)}"
 
     def print_deposit(self):
-        return f"${self._deposit:,.2f}"
+        return f"${round(self._deposit, 2)}"
 
     def print_charge(self):
-        return f"${self._charge:,.2f}"
+        return f"${round(self._charge, 2)}"
 
     def print_tax(self):
-        return f"${self._tax:,.2f}"
+        return f"${round(self._tax, 2)}"
 
     def length(self):
         return (self.date_started - self.date_ended).days

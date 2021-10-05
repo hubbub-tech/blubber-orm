@@ -285,6 +285,18 @@ class Carts(Models, UserModelDecorator):
             carts.append(Carts.get(id))
         return carts
 
+    @classmethod
+    def get_shoppers(cls):
+        SQL = "SELECT cart_id FROM shopping;"
+        Models.database.cursor.execute(SQL)
+        results = [id for id in Models.database.cursor.fetchall()]
+        cart_ids = set(results)
+        shoppers = []
+        for id in cart_ids:
+            shopper = Users.get(id)
+            shoppers.append(shopper)
+        return shoppers
+
     def print_total(self):
         return f"${round(self._total, 2):,.2f}"
 

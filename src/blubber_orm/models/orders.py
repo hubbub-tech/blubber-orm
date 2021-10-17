@@ -1,3 +1,4 @@
+import pytz
 from datetime import datetime, date, timedelta
 
 from .db import sql_to_dictionary
@@ -105,21 +106,21 @@ class Orders(Models, ReservationModelDecorator):
 
     @property
     def dt_dropoff_completed(self):
-        dt_completed = None
         SQL = "SELECT dt_completed FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
         data = (self.id,)
         Models.database.cursor.execute(SQL, data)
         dt_completed = Models.database.cursor.fetchone()
-        return dt_completed
+        if dt_completed: return dt_completed[0]
+        else: return None
 
     @property
     def dt_pickup_completed(self):
-        dt_completed = None
         SQL = "SELECT dt_completed FROM order_pickups WHERE order_id = %s;" # Note: no quotes
         data = (self.id,)
         Models.database.cursor.execute(SQL, data)
         dt_completed = Models.database.cursor.fetchone()
-        return dt_completed
+        if dt_completed: return dt_completed[0]
+        else: return None
 
     def complete_dropoff(self):
         SQL1 = "SELECT dropoff_date, dt_sched, renter_id FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
@@ -141,7 +142,7 @@ class Orders(Models, ReservationModelDecorator):
         result = Models.database.cursor.fetchone()
         if result is None:
             raise Exception(f"No pickup is associated with <Orders {self.id}>.")
-        
+
         SQL2 = "UPDATE order_pickups SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
         data2 = (datetime.now(tz=pytz.UTC), self.id)
         Models.database.cursor.execute(SQL2, data2)

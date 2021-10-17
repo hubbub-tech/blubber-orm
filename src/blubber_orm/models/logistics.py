@@ -86,14 +86,18 @@ class Pickups(Models):
         keys = {"dt_sched": self.dt_scheduled, "renter_id": self.renter_id}
         return Logistics.get(keys)
 
-    @classmethod
-    def dt_completed(cls, order):
-        dt_completed = None
-        SQL = "SELECT dt_completed FROM order_pickups WHERE order_id = %s;" # Note: no quotes
-        data = (order.id,)
+    @property
+    def is_completed(self):
+        SQL = """
+            SELECT dt_completed FROM order_pickups
+                WHERE pickup_date = %s
+                AND renter_id = %s
+                AND dt_sched = %s;"""
+        data = (self.pickup_date, self.renter_id, self.dt_scheduled)
+
         Models.database.cursor.execute(SQL, data)
-        dt_completed = Models.database.cursor.fetchone()[0] # Returns 'None' if no dt_completed
-        return dt_completed
+        results = Models.database.cursor.fetchall()
+        return None not in results
 
     @classmethod
     def by_order(cls, order):
@@ -106,21 +110,6 @@ class Pickups(Models):
             db_pickup = sql_to_dictionary(Models.database.cursor, result)
             pickup = Pickups.get(db_pickup)
         return pickup
-
-    @classmethod
-    def mark_as_collected(cls, order):
-        #ASSERT object is type order
-        #Check to make sure there is a complete pickup row
-        #Check to see if order and pickup are associated in order_pickups
-        pickup = Pickups.by_order(order)
-        if pickup:
-            #Change pickup dt_completed to current time
-            SQL = "UPDATE order_pickups SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
-            data = (datetime.now(tz=pytz.UTC), order.id)
-            Models.database.cursor.execute(SQL, data)
-            Models.database.connection.commit()
-        else:
-            raise Exception(f"No pickup object is associated with <Orders {order.id}>.")
 
     @classmethod
     def get(cls, pickup_keys):
@@ -197,14 +186,18 @@ class Dropoffs(Models):
         keys = {"dt_sched": self.dt_scheduled, "renter_id": self.renter_id}
         return Logistics.get(keys)
 
-    @classmethod
-    def dt_completed(cls, order):
-        dt_completed = None
-        SQL = "SELECT dt_completed FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
-        data = (order.id,)
+    @property
+    def is_completed(self):
+        SQL = """
+            SELECT dt_completed FROM order_dropoffs
+                WHERE dropoff_date = %s
+                AND renter_id = %s
+                AND dt_sched = %s;"""
+        data = (self.dropoff_date, self.renter_id, self.dt_scheduled)
+
         Models.database.cursor.execute(SQL, data)
-        dt_completed = Models.database.cursor.fetchone()[0] # Returns 'None' if no dt_completed
-        return dt_completed
+        results = Models.database.cursor.fetchall()
+        return None not in results
 
     @classmethod
     def by_order(cls, order):
@@ -217,21 +210,6 @@ class Dropoffs(Models):
             db_dropoff = sql_to_dictionary(Models.database.cursor, result)
             dropoff = Dropoffs.get(db_dropoff)
         return dropoff
-
-    @classmethod
-    def mark_as_delivered(cls, order):
-        #ASSERT object is type order
-        #Check to make sure there is a complete dropoff row
-        #Check to see if order and dropoff are associated in order_dropoffs
-        dropoff = Dropoffs.by_order(order)
-        if dropoff:
-            #Change dropoff dt_completed to current time
-            SQL = "UPDATE order_dropoffs SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
-            data = (datetime.now(tz=pytz.UTC), order.id)
-            Models.database.cursor.execute(SQL, data)
-            Models.database.connection.commit()
-        else:
-            raise Exception(f"No dropoff object is associated with <Orders {order.id}>.")
 
     @classmethod
     def get(cls, dropoff_keys):

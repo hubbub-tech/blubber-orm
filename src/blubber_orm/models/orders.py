@@ -1,3 +1,5 @@
+from datetime import datetime, date, timedelta
+
 from .db import sql_to_dictionary
 from .base import Models
 from .users import Users # for order.lister
@@ -100,6 +102,50 @@ class Orders(Models, ReservationModelDecorator):
     @property
     def lister(self):
         return Users.get(self._lister_id)
+
+    @property
+    def dt_dropoff_completed(self):
+        dt_completed = None
+        SQL = "SELECT dt_completed FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
+        data = (self.id,)
+        Models.database.cursor.execute(SQL, data)
+        dt_completed = Models.database.cursor.fetchone()
+        return dt_completed
+
+    @property
+    def dt_pickup_completed(self):
+        dt_completed = None
+        SQL = "SELECT dt_completed FROM order_pickups WHERE order_id = %s;" # Note: no quotes
+        data = (self.id,)
+        Models.database.cursor.execute(SQL, data)
+        dt_completed = Models.database.cursor.fetchone()
+        return dt_completed
+
+    def complete_dropoff(self):
+        SQL1 = "SELECT dropoff_date, dt_sched, renter_id FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
+        data1 = (self.id, )
+        Models.database.cursor.execute(SQL1, data1)
+        result = Models.database.cursor.fetchone()
+        if result is None:
+            raise Exception(f"No dropoff is associated with <Orders {self.id}>.")
+
+        SQL2 = "UPDATE order_dropoffs SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
+        data2 = (datetime.now(tz=pytz.UTC), self.id)
+        Models.database.cursor.execute(SQL2, data2)
+        Models.database.connection.commit()
+
+    def complete_pickup(self):
+        SQL1 = "SELECT pickup_date, dt_sched, renter_id FROM order_pickups WHERE order_id = %s;" # Note: no quotes
+        data1 = (self.id, )
+        Models.database.cursor.execute(SQL1, data1)
+        result = Models.database.cursor.fetchone()
+        if result is None:
+            raise Exception(f"No pickup is associated with <Orders {self.id}>.")
+        
+        SQL2 = "UPDATE order_pickups SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
+        data2 = (datetime.now(tz=pytz.UTC), self.id)
+        Models.database.cursor.execute(SQL2, data2)
+        Models.database.connection.commit()
 
     @classmethod
     def by_pickup(cls, pickup):

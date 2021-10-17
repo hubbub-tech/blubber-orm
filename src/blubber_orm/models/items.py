@@ -333,7 +333,7 @@ class Calendars(Models, ItemModelDecorator):
             else:
                 return [closest_operating_date, closest_operating_date]
 
-    #schedules a reservation if valid, returns false if not, returns none if expired item
+    #returns true if a reservation if valid, returns false if not, returns none if expired item
     def scheduler(self, new_res, bookings=None):
         if bookings is None:
             bookings = self.reservations

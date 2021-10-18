@@ -122,7 +122,7 @@ class Orders(Models, ReservationModelDecorator):
         if dt_completed: return dt_completed[0]
         else: return None
 
-    def complete_dropoff(self):
+    def complete_dropoff(self, dt_completed=None):
         SQL1 = "SELECT dropoff_date, dt_sched, renter_id FROM order_dropoffs WHERE order_id = %s;" # Note: no quotes
         data1 = (self.id, )
         Models.database.cursor.execute(SQL1, data1)
@@ -130,12 +130,14 @@ class Orders(Models, ReservationModelDecorator):
         if result is None:
             raise Exception(f"No dropoff is associated with <Orders {self.id}>.")
 
+        if dt_completed is None:
+            dt_completed = datetime.now(tz=pytz.UTC)
         SQL2 = "UPDATE order_dropoffs SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
-        data2 = (datetime.now(tz=pytz.UTC), self.id)
+        data2 = (dt_completed, self.id)
         Models.database.cursor.execute(SQL2, data2)
         Models.database.connection.commit()
 
-    def complete_pickup(self):
+    def complete_pickup(self, dt_completed=None):
         SQL1 = "SELECT pickup_date, dt_sched, renter_id FROM order_pickups WHERE order_id = %s;" # Note: no quotes
         data1 = (self.id, )
         Models.database.cursor.execute(SQL1, data1)
@@ -143,8 +145,10 @@ class Orders(Models, ReservationModelDecorator):
         if result is None:
             raise Exception(f"No pickup is associated with <Orders {self.id}>.")
 
+        if dt_completed is None:
+            dt_completed = datetime.now(tz=pytz.UTC)
         SQL2 = "UPDATE order_pickups SET dt_completed = %s WHERE order_id = %s;" # Note: no quotes
-        data2 = (datetime.now(tz=pytz.UTC), self.id)
+        data2 = (dt_completed, self.id)
         Models.database.cursor.execute(SQL2, data2)
         Models.database.connection.commit()
 

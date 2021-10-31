@@ -128,7 +128,8 @@ class Users(Models, AddressModelDecorator):
         first, last = self._name.split(",")
         return f"{first} {last}"
 
-    def make_username(self):
+    @property
+    def username(self):
         first, last = self._name.split(",")
         return f"{first[:4]}{last[:4]}.{self.id}"
 
@@ -205,42 +206,56 @@ class Users(Models, AddressModelDecorator):
             users.append(Users(db_user))
         return users
 
-    @classmethod
-    def search_courier(cls, user):
+    @property
+    def is_courier(self):
         SQL = "SELECT * FROM couriers WHERE courier_id = %s;" # Note: no quotes
-        data = (user.id, )
+        data = (self.id, )
         Models.database.cursor.execute(SQL, data)
         return Models.database.cursor.fetchone() is not None
 
-    @classmethod
-    def search_renter(cls, user):
+    def make_courier(self):
+        if self.is_courier == False:
+            SQL = "INSERT INTO couriers (courier_id) VALUES (%s);" # Note: no quotes
+            data = (self.id, )
+            Models.database.cursor.execute(SQL, data)
+            Models.database.connection.commit()
+
+    @property
+    def is_renter(self):
         SQL = "SELECT * FROM renters WHERE renter_id = %s;" # Note: no quotes
-        data = (user.id, )
-        Models.database.cursor.execute(SQL, data)
-        return Models.database.cursor.fetchone() is not None
-
-    @classmethod
-    def search_lister(cls, user):
-        SQL = "SELECT * FROM listers WHERE lister_id = %s;" # Note: no quotes
-        data = (user.id, )
+        data = (self.id, )
         Models.database.cursor.execute(SQL, data)
         return Models.database.cursor.fetchone() is not None
 
     def make_renter(self):
-        #ASSERT user is not already in the renters table
-        if Users.search_renter(self) == False:
-            SQL = "INSERT INTO renters (renter_id) VALUES (%s);"
+        if self.is_renter == False:
+            SQL = "INSERT INTO renters (renter_id) VALUES (%s);" # Note: no quotes
             data = (self.id, )
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
 
+    @property
+    def is_lister(self):
+        SQL = "SELECT * FROM listers WHERE lister_id = %s;" # Note: no quotes
+        data = (self.id, )
+        Models.database.cursor.execute(SQL, data)
+        return Models.database.cursor.fetchone() is not None
+
     def make_lister(self):
-        #ASSERT user is not already in the listers table
-        if Users.search_lister(self) == False:
-            SQL = "INSERT INTO listers (lister_id) VALUES (%s);"
+        if self.is_lister == False:
+            SQL = "INSERT INTO listers (lister_id) VALUES (%s);" # Note: no quotes
             data = (self.id, )
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
+            
+class Couriers(Models, ):
+    table_name = "couriers"
+    table_primaries = ["courier_id"]
+
+    def __init__(self, db_data):
+        self.courier_id = db_data["courier_id"]
+        self.session =
+
 
 #No setter-getter because this class is not important
 class Profiles(Models, UserModelDecorator):

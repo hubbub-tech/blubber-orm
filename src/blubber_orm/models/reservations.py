@@ -1,6 +1,8 @@
 from .db import sql_to_dictionary
 from .base import Models
 
+from utils.structs import LinkedList
+
 class ReservationModelDecorator:
     """
     A decorator on Models which provides access to the user linked by the foreign
@@ -40,6 +42,8 @@ class Reservations(Models):
     table_name = "reservations"
     table_primaries = ["date_started", "date_ended", "item_id", "renter_id"]
 
+    _history = None
+
     def __init__(self, db_data):
         #attributes
         self.date_started = db_data["date_started"]
@@ -53,6 +57,41 @@ class Reservations(Models):
         self.item_id = db_data["item_id"]
         self.renter_id = db_data["renter_id"]
         self.dt_created = db_data["dt_created"]
+
+        # change history
+        # self.hist_item_id = db_data["hist_item_id"]
+        # self.hist_renter_id = db_data["hist_renter_id"]
+        # self.hist_date_start = db_data["hist_date_start"]
+        # self.hist_date_end = db_data["hist_date_end"]
+
+    # reservation history linked list in development
+    @property
+    def history(self):
+        if self._history is None:
+            if self.hist_item_id:
+                self._history = LinkedList()
+                next_reservation = Reservations.get({
+                    "item_id": self.hist_item_id,
+                    "renter_id": self.hist_renter_id,
+                    "date_started": self.hist_date_start,
+                    "date_ended": self.hist_date_end
+                })
+                while next_reservation:
+                    self._history.add({
+                        "item_id": self.hist_item_id,
+                        "renter_id": self.hist_renter_id,
+                        "date_started": self.hist_date_start,
+                        "date_ended": self.hist_date_end
+                    }, next_reservation)
+                    if next_reservation.hist_item_id:
+                        next_reservation = Reservations.get({
+                            "item_id": next_reservation.hist_item_id,
+                            "renter_id": next_reservation.hist_renter_id,
+                            "date_started": next_reservation.hist_date_start,
+                            "date_ended": next_reservation.hist_date_end
+                        })
+                    else: break
+        return self._history
 
     def print_total(self):
         """This is how much user must pay = charge + deposit + tax"""

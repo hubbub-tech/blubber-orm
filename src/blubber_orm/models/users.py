@@ -167,11 +167,6 @@ class Users(Models, AddressModelDecorator):
             renters.append(renter)
         return renters
 
-    @classmethod
-    def get_by_username(cls, username):
-        _, id = username.split(".")
-        return Users.get(id)
-
     def refresh(self):
         self = Users.get(self.id)
 
@@ -247,15 +242,32 @@ class Users(Models, AddressModelDecorator):
             data = (self.id, )
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
-            
-class Couriers(Models, ):
+
+class Couriers(Models, UserModelDecorator):
     table_name = "couriers"
     table_primaries = ["courier_id"]
 
     def __init__(self, db_data):
         self.courier_id = db_data["courier_id"]
-        self.session =
+        self._csession = dt_data["session"]
+        self.is_admin = dt_data["is_admin"]
 
+        self.user_id = db_data["courier_id"]
+
+    @property
+    def csession(self):
+        return self._csession
+
+    @csession.setter
+    def csession(self, new_session):
+        SQL = "UPDATE users SET session = %s WHERE id = %s;" # Note: no quotes
+        data = (new_session, self.id)
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
+        self._csession = new_session
+
+    def refresh(self):
+        self = Couriers.get(self.courier_id)
 
 #No setter-getter because this class is not important
 class Profiles(Models, UserModelDecorator):

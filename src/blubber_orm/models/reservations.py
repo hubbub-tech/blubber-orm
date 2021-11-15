@@ -11,10 +11,8 @@ class ReservationModelDecorator:
 
     @property
     def reservation(self):
-        "Check to see if ModelClass is compatible with reservation decorator"
-
-        ModelClass = type(self)
-        assert ModelClass.__dict__.get("res_date_start")
+        ChildModelClass = type(self)
+        assert ChildModelClass.__dict__.get("res_date_start") # ModelsClass must be compatible
 
         reservation_keys = {
             "date_started": self.res_date_start,
@@ -81,79 +79,7 @@ class Reservations(Models):
         """This is how much user must pay = charge + deposit + tax"""
         return f"${round(self._charge + self._deposit + self._tax, 2)}"
 
-    def print_deposit(self):
-        return f"${round(self._deposit, 2)}"
-
-    def print_charge(self):
-        return f"${round(self._charge, 2)}"
-
-    def print_tax(self):
-        return f"${round(self._tax, 2)}"
-
-    def length(self):
-        return (self.date_started - self.date_ended).days
-
-    def refresh(self):
-        reservation_keys = {
-            "date_started": self.date_started,
-            "date_ended": self.date_ended,
-            "renter_id": self.renter_id,
-            "item_id": self.item_id}
-        self = Reservations.get(reservation_keys)
-
-    @classmethod
-    def set(cls, reservation_keys, changes):
-        targets = [f"{target} = %s" for target in changes.keys()]
-        targets_str = ", ".join(targets)
-        SQL = f"""
-            UPDATE reservations SET {targets_str}
-                WHERE date_started = %s
-                AND date_ended = %s
-                AND renter_id = %s
-                AND item_id = %s;""" # Note: no quotes
-        updates = [value for value in changes.values()]
-        keys = [
-            reservation_keys['date_started'],
-            reservation_keys['date_ended'],
-            reservation_keys['renter_id'],
-            reservation_keys['item_id']]
-        data = tuple(updates + keys)
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
-    @classmethod
-    def get(cls, reservation_keys):
-        res = None
-        SQL = """
-            SELECT * FROM reservations
-                WHERE date_started = %s
-                AND date_ended = %s
-                AND renter_id = %s
-                AND item_id = %s;""" # Note: no quotes
-        data = (
-            reservation_keys['date_started'],
-            reservation_keys['date_ended'],
-            reservation_keys['renter_id'],
-            reservation_keys['item_id'])
-        Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
-        if result:
-            db_reservation = sql_to_dictionary(Models.database.cursor, result)
-            res = Reservations(db_reservation)
-        return res
-
-    @classmethod
-    def delete(cls, reservation_keys):
-        SQL = """
-            DELETE FROM reservations
-                WHERE date_started = %s
-                AND date_ended = %s
-                AND renter_id = %s
-                AND item_id = %s;""" # Note: no quotes
-        data = (
-            reservation_keys['date_started'],
-            reservation_keys['date_ended'],
-            reservation_keys['renter_id'],
-            reservation_keys['item_id'])
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
+    def print_deposit(self): return f"${round(self._deposit, 2)}"
+    def print_charge(self): return f"${round(self._charge, 2)}"
+    def print_tax(self): return f"${round(self._tax, 2)}"
+    def length(self): return (self.date_ended - self.date_started).days

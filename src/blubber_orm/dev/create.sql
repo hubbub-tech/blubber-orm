@@ -94,18 +94,18 @@ CREATE TABLE shopping (
   FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
 );
 
-CREATE TABLE listers (
-  lister_id integer,
-  PRIMARY KEY (lister_id),
-  FOREIGN KEY (lister_id) REFERENCES users (id) ON DELETE CASCADE
-);
-
 CREATE TABLE couriers (
   courier_id integer,
   session varchar(20),
   is_admin boolean DEFAULT FALSE,
   PRIMARY KEY (courier_id),
   FOREIGN KEY (courier_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE TABLE listers (
+  lister_id integer,
+  PRIMARY KEY (lister_id),
+  FOREIGN KEY (lister_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE renters (

@@ -37,17 +37,6 @@ class Logistics(Models, AddressModelDecorator):
     def renter(self):
         return Users.get(self.renter_id)
 
-    @classmethod
-    def set(cls, logistics_keys, changes):
-        targets = [f"{target} = %s" for target in changes.keys()]
-        targets_str = ", ".join(targets)
-        SQL = f"UPDATE logistics SET {targets_str} WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        updates = [value for value in changes.values()]
-        keys = [logistics_keys['dt_sched'], logistics_keys['renter_id']]
-        data = tuple(updates + keys)
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
 class Pickups(Models):
     table_name = "pickups"
     table_primaries = ["pickup_date", "dt_sched", "renter_id"]

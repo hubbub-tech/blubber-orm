@@ -167,9 +167,6 @@ class Users(Models, AddressModelDecorator):
             renters.append(renter)
         return renters
 
-    def refresh(self):
-        self = Users.get(self.id)
-
     @classmethod
     def by_address(cls, address):
         #get all users at this address
@@ -294,9 +291,6 @@ class Couriers(Models, UserModelDecorator):
         Models.database.connection.commit()
         self._session = new_session
 
-    def refresh(self):
-        self = Couriers.get(self.courier_id)
-
 #No setter-getter because this class is not important
 class Profiles(Models, UserModelDecorator):
 
@@ -310,9 +304,6 @@ class Profiles(Models, UserModelDecorator):
         self.phone = db_data["phone"]
         self.has_pic = db_data["has_pic"]
         self.bio = db_data["bio"]
-
-    def refresh(self):
-        self = Profiles.get(self.user_id)
 
 #NOTE: attributes total and total_deposit should NEVER have to be directly edited
 class Carts(Models, UserModelDecorator):
@@ -461,6 +452,3 @@ class Carts(Models, UserModelDecorator):
         for id in db_item_ids:
             items.append(Items.get(id))
         return items
-
-    def refresh(self):
-        self = Carts.get(self.user_id)

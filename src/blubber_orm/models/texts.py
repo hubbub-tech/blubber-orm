@@ -96,19 +96,6 @@ class Testimonials(Models, UserModelDecorator):
     def set(cls):
         raise Exception("Testimonials are not editable. Make a new one instead.")
 
-    @classmethod
-    def delete(cls, testimonial_keys):
-        SQL = "DELETE FROM testimonials WHERE date_created = %s AND user_id = %s;" # Note: no quotes
-        data = (testimonial_keys["date_created"], testimonial_keys["user_id"])
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
-    def refresh(self):
-        testimonial_keys = {
-            "date_created": self.date_created,
-            "user_id": self.user_id}
-        self = Testimonials.get(testimonial_keys)
-
 class Tags(Models):
     table_name = "tags"
     table_primaries = ["tag_name"]
@@ -130,13 +117,3 @@ class Tags(Models):
     @classmethod
     def set(cls):
         raise Exception("Tags are not editable. Make a new one instead.")
-
-    @classmethod
-    def delete(cls, name):
-        SQL = "DELETE FROM tags WHERE tag_name = %s;" # Note: no quotes
-        data = (name, )
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
-    def refresh(self):
-        self = Tags.get(self.name)

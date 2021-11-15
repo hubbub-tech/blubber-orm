@@ -35,55 +35,6 @@ class Addresses(Models):
         self.state = db_data["state"]
         self.zip_code = db_data["zip"]
 
-    @classmethod
-    def get(cls, address_keys):
-        address = None
-        SQL = """
-            SELECT * FROM addresses
-                WHERE num = %s AND street = %s AND apt = %s AND zip = %s;""" # Note: no quotes
-        data = (
-            address_keys['num'],
-            address_keys['street'],
-            address_keys['apt'],
-            address_keys['zip'])
-        Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
-        if result:
-            db_address = sql_to_dictionary(Models.database.cursor, result)
-            address = Addresses(db_address)
-        return address # query here
-
-    #TODO: Addresses shouldnt change once created
-    @classmethod
-    def set(cls, address_keys, changes):
-        targets = [f"{target} = %s" for target in changes.keys()]
-        targets_str = ", ".join(targets)
-        SQL = f"""
-            UPDATE addresses SET {targets_str}
-                WHERE num = %s AND street = %s AND apt = %s AND zip = %s;""" # Note: no quotes
-        updates = [value for value in changes.values()]
-        keys = [
-            address_keys['num'],
-            address_keys['street'],
-            address_keys['apt'],
-            address_keys['zip']]
-        data = tuple(updates + keys)
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
-    @classmethod
-    def delete(cls, address_keys):
-        SQL = """
-            DELETE FROM addresses
-                WHERE num = %s AND street = %s AND apt = %s AND zip = %s;""" # Note: no quotes
-        data = (
-            address_keys['num'],
-            address_keys['street'],
-            address_keys['apt'],
-            address_keys['zip'])
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
     def display(self):
         return f"{self.num} {self.street}, {self.city}, {self.state} {self.zip_code}"
 

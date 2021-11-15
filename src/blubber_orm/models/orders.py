@@ -184,29 +184,5 @@ class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
         self.item_id = db_data["item_id"]
 
     @classmethod
-    def get(cls, extension_keys):
-        assert extension_keys.get('order_id') and extension_keys.get('res_date_end')
-
-        SQL = "SELECT * FROM extensions WHERE order_id = %s AND res_date_end = %s;"
-        data = (extension_keys['order_id'], extension_keys['res_date_end'])
-        Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
-
-        if result is None: return None
-
-        db_ext = sql_to_dictionary(Models.database.cursor, result)
-        extension = Extensions(db_ext)
-        return extension
-
-    @classmethod
     def set(cls, extension_keys, changes):
         raise Exception("Extensions are not directly editable. Edit reservations or orders instead.")
-
-    @classmethod
-    def delete(cls, extension_keys):
-        assert extension_keys.get('order_id') and extension_keys.get('res_date_end')
-        
-        SQL = "DELETE FROM extensions WHERE order_id = %s AND res_date_end = %s;"
-        data = (extension_keys['order_id'], extension_keys['res_date_end'])
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()

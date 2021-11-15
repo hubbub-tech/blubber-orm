@@ -9,23 +9,20 @@ class AddressModelDecorator:
 
     @property
     def address(self):
-        model_class = type(self)
-        if "_address_num" in model_class.__dict__.keys(): #in reality it needs the other address keys too
-            address_keys = {
-                "num": self._address_num,
-                "street": self._address_street,
-                "apt": self._address_apt,
-                "zip": self._address_zip}
-            return Addresses.get(address_keys)
-        else:
-            raise Exception("This class cannot inherit from the address decorator. No address keys provided.")
+        ChildModelsClass = type(self)
+        assert ChildModelsClass.__dict__.get("_address_num")
+
+        address_keys = {
+            "num": self._address_num,
+            "street": self._address_street,
+            "apt": self._address_apt,
+            "zip": self._address_zip
+        }
+        return Addresses.get(address_keys)
 
 class Addresses(Models):
     table_name = "addresses"
     table_primaries = ["num", "street", "apt", "zip"]
-
-    _occupants = None
-    _items = None
 
     def __init__(self, db_data):
         self.num = db_data["num"]

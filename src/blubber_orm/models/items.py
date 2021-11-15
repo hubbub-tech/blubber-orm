@@ -12,15 +12,11 @@ class ItemModelDecorator:
     key `item_id`.
     """
 
-    item_id = None
-
     @property
     def item(self):
-        model_class = type(self)
-        if "item_id" in model_class.__dict__.keys():
-            return Items.get(self.item_id)
-        else:
-            raise Exception("This class cannot inherit from the item decorator. No item_id attribute.")
+        ChildModelsClass = type(self)
+        assert ChildModelsClass.__dict__.get("item_id")
+        return Items.get(self.item_id)
 
 class Items(Models, AddressModelDecorator):
     table_name = "items"
@@ -35,15 +31,14 @@ class Items(Models, AddressModelDecorator):
         #attributes
         self.id = db_data["id"]
         self.name = db_data["name"]
-        self._price = db_data["price"]
-        self._price_per_day = self._price / 10.00 #TODO
-        self._price_per_week = self._price / 5.00 #TODO
-        self._price_per_month = self._price / 2.00 #TODO
+        self.dt_created = db_data["dt_created"]
+
+        self.price = db_data["price"]
         self._is_available = db_data["is_available"]
         self._is_featured = db_data["is_featured"]
-        self.dt_created = db_data["dt_created"]
+
         self.is_locked = db_data["is_locked"]
-        self._is_routed = db_data["is_routed"]
+        self.is_routed = db_data["is_routed"]
         self.last_locked = db_data["last_locked"]
         self.lister_id = db_data["lister_id"]
         #address
@@ -65,18 +60,6 @@ class Items(Models, AddressModelDecorator):
         self._is_available = is_available
 
     @property
-    def is_routed(self):
-        return self._is_routed
-
-    @is_routed.setter
-    def is_routed(self, is_routed):
-        SQL = "UPDATE items SET is_routed = %s WHERE id = %s;" # Note: no quotes
-        data = (is_routed, self.id)
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-        self._is_routed = is_routed
-
-    @property
     def is_featured(self):
         return self._is_featured
 
@@ -89,10 +72,6 @@ class Items(Models, AddressModelDecorator):
         self._is_featured = is_featured
 
     @property
-    def price(self):
-        return self._price
-
-    @property
     def details(self):
         return Details.get(self.id)
 
@@ -102,92 +81,98 @@ class Items(Models, AddressModelDecorator):
 
     @classmethod
     def by_address(cls, address):
-        #get all items at this address
         SQL = """
             SELECT * FROM items
                 WHERE address_num = %s
                 AND address_street = %s
                 AND address_apt = %s
-                AND address_zip = %s;""" # Note: no quotes
+                AND address_zip = %s;"""
         data = (address.num, address.street, address.apt, address.zip_code)
         Models.database.cursor.execute(SQL, data)
-        items = []
         results = Models.database.cursor.fetchall()
-        for query in results:
-            db_item = sql_to_dictionary(Models.database.cursor, query)
-            items.append(Items(db_item))
+
+        items = []
+        for result in results:
+            item_dict = sql_to_dictionary(Models.database.cursor, result)
+            item = Items(item_dict)
+            items.append(item)
         return items
 
     @classmethod
-    def by_zip(cls, zip_code):
-        #get all items in this general location
-        SQL = "SELECT * FROM items WHERE address_zip = %s;" # Note: no quotes
-        data = (zip_code, )
+    def by_zip(cls, zip):
+        SQL = "SELECT * FROM items WHERE address_zip = %s;"
+        data = (zip, )
         Models.database.cursor.execute(SQL, data)
-        items = []
         results = Models.database.cursor.fetchall()
-        for query in results:
-            db_item = sql_to_dictionary(Models.database.cursor, query)
-            items.append(Items(db_item))
+
+        items = []
+        for result in results:
+            item_dict = sql_to_dictionary(Models.database.cursor, result)
+            item = Items(item_dict)
+            items.append(item)
         return items
 
     @classmethod
-    def by_lister(cls, lister):
-        #get all items in this lister
+    def by_lister(cls, user):
         SQL = "SELECT * FROM items WHERE lister_id = %s;" # Note: no quotes
-        data = (lister.id, )
+        data = (user.id, )
         Models.database.cursor.execute(SQL, data)
-        items = []
         results = Models.database.cursor.fetchall()
-        for query in results:
-            db_item = sql_to_dictionary(Models.database.cursor, query)
-            items.append(Items(db_item))
+
+        items = []
+        for result in results:
+            item_dict = sql_to_dictionary(Models.database.cursor, result)
+            item = Items(item_dict)
+            items.append(item)
         return items
 
     @classmethod
     def by_tag(cls, tag):
-        SQL = "SELECT * FROM tagging WHERE tag_name = %s;"
+        SQL = "SELECT item_id FROM tagging WHERE tag_name = %s;"
         data = (tag.name, )
         Models.database.cursor.execute(SQL, data)
+        results = Models.database.cursor.fetchall() # [(item_id,),...]
+        results = results.copy() # shallow copy is needed to preserve the cursor
+
         items = []
-        db_items = []
-        results = Models.database.cursor.fetchall()
-        for query in results:
-            db_item_by_tag = sql_to_dictionary(Models.database.cursor, query)
-            db_items.append(db_item_by_tag)
-
-        for db_item_by_tag in db_items:
-            items.append(Items.get(db_item_by_tag["item_id"]))
+        for result in results:
+            item_id, = result
+            item = Items.get(item_id)
+            items.append(item)
         return items
-
-    def retail(self):
-        return f"${self._price:,.2f}"
 
     def lock(self, user):
         SQL = "UPDATE items SET is_locked = %s, last_locked = %s WHERE id = %s;" # Note: no quotes
         data = (True, user.id, self.id)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
-        self.refresh()
+
+        self.is_locked = True
+        self.last_locked = user.id
 
     def unlock(self):
-        SQL = "UPDATE items SET is_locked = %s, last_locked = %s, is_routed = %s WHERE id = %s;" # Note: no quotes
-        data = (False, None, False, self.id)
+        SQL = "UPDATE items SET is_locked = %s, is_routed = %s, last_locked = %s WHERE id = %s;"
+        data = (False, False, None, self.id)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
-        self.refresh()
+
+        self.is_locked = False
+        self.is_routed = False
+        self.last_locked = None
 
     def add_tag(self, tag):
-        SQL = "INSERT INTO tagging (item_id, tag_name) VALUES (%s, %s);" #does this return a tuple or single value?
-        data = (self.id, tag.name) #sensitive to tuple order
+        SQL = "INSERT INTO tagging (item_id, tag_name) VALUES (%s, %s);"
+        data = (self.id, tag.name)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
 
     def remove_tag(self, tag):
-        SQL = "DELETE FROM tagging WHERE item_id = %s AND tag_name = %s;" #does this return a tuple or single value?
-        data = (self.id, tag.name) #sensitive to tuple order
+        SQL = "DELETE FROM tagging WHERE item_id = %s AND tag_name = %s;"
+        data = (self.id, tag.name)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
+
+    def print_price(self): return f"${round(self.price, 2)}"
 
 class Details(Models, ItemModelDecorator):
     table_name = "details"
@@ -196,16 +181,15 @@ class Details(Models, ItemModelDecorator):
     item_id = None
 
     def __init__(self, db_data):
-        #attributes
         self.item_id = db_data["id"]
         self.description = db_data["description"]
-        self._condition = db_data["condition"] #int
-        self._weight = db_data["weight"] #int
-        self._volume = db_data["volume"] #int
+        self._condition = db_data["condition"]
+        self._weight = db_data["weight"]
+        self._volume = db_data["volume"]
 
     @property
     def condition(self):
-        condition_key = {3: 'Very Good', 2: 'Good', 1: 'Acceptible'}
+        condition_key = {3: 'Very Good', 2: 'Good', 1: 'Acceptable'}
         if self._condition in range(1, 4):
             return condition_key[self._condition]
         else:
@@ -227,20 +211,16 @@ class Details(Models, ItemModelDecorator):
         else:
             return "Very Large"
 
-    #RENAME: abbreviation?
     def abbreviate(self, max_chars=127):
         abbreviation = ''
-        if len(self.description) > max_chars:
-            abbreviation = self.description[:max_chars] + "..."
-        else:
-            abbreviation = self.description
+        if len(self.description) <= max_chars: abbreviation = self.description
+        else: abbreviation = self.description[:max_chars] + "..."
         return abbreviation
 
 class Calendars(Models, ItemModelDecorator):
     table_name = "calendars"
     table_primaries = ["id"]
 
-    _reservations = None
     item_id = None
 
     def __init__(self, db_data):
@@ -253,39 +233,37 @@ class Calendars(Models, ItemModelDecorator):
         filters = {"item_id": self.item_id, "is_calendared": True}
         return Reservations.filter(filters)
 
-    def size(self):
-        return len(self.reservations)
+    def size(self): return len(self.reservations)
 
     #for remove() and add(), you need to pass the specific res, bc no way to tell otherwise
     def remove(self, reservation):
         SQL = """
             UPDATE reservations SET is_calendared = %s
                 WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
-        data = (False,
+        data = (
+            False,
             reservation.item_id,
             reservation.renter_id,
             reservation.date_started,
-            reservation.date_ended)
+            reservation.date_ended
+        )
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
-
-        #resetting self.contents
-        self._reservations = None
 
     def add(self, reservation):
         SQL = """
             UPDATE reservations SET is_in_cart = %s, is_calendared = %s
                 WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
-        data = (False, True,
+        data = (
+            False,
+            True,
             reservation.item_id,
             reservation.renter_id,
             reservation.date_started,
-            reservation.date_ended)
+            reservation.date_ended
+        )
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
-
-        #resetting self.contents
-        self._reservations = None
 
     #determining if an item is available day-by-day
     def check_availability(self, comparison_date=date.today()):

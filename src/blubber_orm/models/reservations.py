@@ -11,32 +11,17 @@ class ReservationModelDecorator:
 
     @property
     def reservation(self):
-        model_class = type(self)
-        if "_res_date_start" in model_class.__dict__.keys(): #in reality it needs the other res keys too
-            reservation_keys = {
-                "date_started": self._res_date_start,
-                "date_ended": self._res_date_end,
-                "renter_id": self._res_renter_id,
-                "item_id": self._res_item_id}
-            return Reservations.get(reservation_keys)
-        else:
-            raise Exception("This class cannot inherit from the reservation decorator. No res keys provided.")
+        "Check to see if ModelClass is compatible with reservation decorator"
 
-    @property
-    def renter_id(self):
-        return self._res_renter_id
+        ModelClass = type(self)
+        assert ModelClass.__dict__.get("res_date_start")
 
-    @property
-    def item_id(self):
-        return self._res_item_id
-
-    @property
-    def res_date_start(self):
-        return self._res_date_start
-
-    @property
-    def res_date_end(self):
-        return self._res_date_end
+        reservation_keys = {
+            "date_started": self.res_date_start,
+            "date_ended": self.res_date_end,
+            "renter_id": self.renter_id,
+            "item_id": self.item_id}
+        return Reservations.get(reservation_keys)
 
 class Reservations(Models):
     table_name = "reservations"
@@ -46,6 +31,7 @@ class Reservations(Models):
 
     def __init__(self, db_data):
         #attributes
+        self.dt_created = db_data["dt_created"]
         self.date_started = db_data["date_started"]
         self.date_ended = db_data["date_ended"]
         self.is_calendared = db_data["is_calendared"]
@@ -56,41 +42,39 @@ class Reservations(Models):
         self._tax = db_data["tax"]
         self.item_id = db_data["item_id"]
         self.renter_id = db_data["renter_id"]
-        self.dt_created = db_data["dt_created"]
 
         # change history
-        # self.hist_item_id = db_data["hist_item_id"]
-        # self.hist_renter_id = db_data["hist_renter_id"]
-        # self.hist_date_start = db_data["hist_date_start"]
-        # self.hist_date_end = db_data["hist_date_end"]
+        self.hist_item_id = db_data["hist_item_id"]
+        self.hist_renter_id = db_data["hist_renter_id"]
+        self.hist_date_start = db_data["hist_date_start"]
+        self.hist_date_end = db_data["hist_date_end"]
 
     # reservation history linked list in development
     @property
     def history(self):
-        if self._history is None:
-            if self.hist_item_id:
-                self._history = LinkedList()
-                next_reservation = Reservations.get({
+        if self._history is None and self.hist_item_id:
+            self._history = LinkedList()
+            hist_reservation = Reservations.get({
+                "item_id": self.hist_item_id,
+                "renter_id": self.hist_renter_id,
+                "date_started": self.hist_date_start,
+                "date_ended": self.hist_date_end
+            })
+            while hist_reservation:
+                self._history.put({
                     "item_id": self.hist_item_id,
                     "renter_id": self.hist_renter_id,
                     "date_started": self.hist_date_start,
                     "date_ended": self.hist_date_end
-                })
-                while next_reservation:
-                    self._history.add({
-                        "item_id": self.hist_item_id,
-                        "renter_id": self.hist_renter_id,
-                        "date_started": self.hist_date_start,
-                        "date_ended": self.hist_date_end
-                    }, next_reservation)
-                    if next_reservation.hist_item_id:
-                        next_reservation = Reservations.get({
-                            "item_id": next_reservation.hist_item_id,
-                            "renter_id": next_reservation.hist_renter_id,
-                            "date_started": next_reservation.hist_date_start,
-                            "date_ended": next_reservation.hist_date_end
-                        })
-                    else: break
+                }, hist_reservation)
+                if hist_reservation.hist_item_id:
+                    hist_reservation = Reservations.get({
+                        "item_id": next_reservation.hist_item_id,
+                        "renter_id": next_reservation.hist_renter_id,
+                        "date_started": next_reservation.hist_date_start,
+                        "date_ended": next_reservation.hist_date_end
+                    })
+                else: break
         return self._history
 
     def print_total(self):

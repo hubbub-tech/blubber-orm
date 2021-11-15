@@ -243,28 +243,56 @@ class Users(Models, AddressModelDecorator):
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
 
+    @property
+    def is_payer(self):
+        SQL = "SELECT * FROM payers WHERE payer_id = %s;" # Note: no quotes
+        data = (self.id, )
+        Models.database.cursor.execute(SQL, data)
+        return Models.database.cursor.fetchone() is not None
+
+    def make_payer(self):
+        if self.is_payer == False:
+            SQL = "INSERT INTO payers (payer_id) VALUES (%s);" # Note: no quotes
+            data = (self.id, )
+            Models.database.cursor.execute(SQL, data)
+            Models.database.connection.commit()
+
+    @property
+    def is_payee(self):
+        SQL = "SELECT * FROM payee WHERE payer_id = %s;" # Note: no quotes
+        data = (self.id, )
+        Models.database.cursor.execute(SQL, data)
+        return Models.database.cursor.fetchone() is not None
+
+    def make_payee(self):
+        if self.is_payee == False:
+            SQL = "INSERT INTO payee (payee_id) VALUES (%s);" # Note: no quotes
+            data = (self.id, )
+            Models.database.cursor.execute(SQL, data)
+            Models.database.connection.commit()
+
 class Couriers(Models, UserModelDecorator):
     table_name = "couriers"
     table_primaries = ["courier_id"]
 
     def __init__(self, db_data):
         self.courier_id = db_data["courier_id"]
-        self._csession = dt_data["session"]
+        self._session = dt_data["session"]
         self.is_admin = dt_data["is_admin"]
 
         self.user_id = db_data["courier_id"]
 
     @property
-    def csession(self):
-        return self._csession
+    def session(self):
+        return self._session
 
-    @csession.setter
-    def csession(self, new_session):
-        SQL = "UPDATE users SET session = %s WHERE id = %s;" # Note: no quotes
+    @session.setter
+    def session(self, new_session):
+        SQL = "UPDATE couriers SET session = %s WHERE id = %s;" # Note: no quotes
         data = (new_session, self.id)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
-        self._csession = new_session
+        self._session = new_session
 
     def refresh(self):
         self = Couriers.get(self.courier_id)

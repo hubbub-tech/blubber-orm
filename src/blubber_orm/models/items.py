@@ -189,9 +189,6 @@ class Items(Models, AddressModelDecorator):
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
 
-    def refresh(self):
-        self = Items.get(self.id)
-
 class Details(Models, ItemModelDecorator):
     table_name = "details"
     table_primaries = ["id"]
@@ -238,9 +235,6 @@ class Details(Models, ItemModelDecorator):
         else:
             abbreviation = self.description
         return abbreviation
-
-    def refresh(self):
-        self = Details.get(self.item_id)
 
 class Calendars(Models, ItemModelDecorator):
     table_name = "calendars"
@@ -375,6 +369,3 @@ class Calendars(Models, ItemModelDecorator):
                 else:
                     booked_days_unstripped.append((day, False))
             return booked_days_unstripped
-
-    def refresh(self):
-        self = Calendars.get(self.item_id)

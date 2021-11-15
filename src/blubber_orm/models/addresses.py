@@ -89,11 +89,3 @@ class Addresses(Models):
 
     def region(self):
         return f"{self.city}, {self.state}"
-
-    def refresh(self):
-        address_keys = {
-            "num": self.num,
-            "street": self.street,
-            "apt": self.apt,
-            "zip": self.zip_code}
-        self = Addresses.get(address_keys)

@@ -24,8 +24,9 @@ class Logistics(Models, AddressModelDecorator):
         self.notes = db_data["notes"]
         self.referral = db_data["referral"]
         self.timeslots = db_data["timeslots"].split(",")
-        self.renter_id = db_data["renter_id"] #the renter id is stored then searched in users
         self.chosen_time = db_data["chosen_time"]
+        self.renter_id = db_data["renter_id"] #the renter id is stored then searched in users
+        self.courier_id = db_data["courier_id"]
         #address
         self._address_num = db_data["address_num"]
         self._address_street = db_data["address_street"]
@@ -37,18 +38,6 @@ class Logistics(Models, AddressModelDecorator):
         return Users.get(self.renter_id)
 
     @classmethod
-    def get(cls, logistics_keys):
-        logistics = None
-        SQL = "SELECT * FROM logistics WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        data = (logistics_keys["dt_sched"], logistics_keys["renter_id"])
-        Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
-        if result:
-            db_logistics = sql_to_dictionary(Models.database.cursor, result)
-            logistics = Logistics(db_logistics)
-        return logistics
-
-    @classmethod
     def set(cls, logistics_keys, changes):
         targets = [f"{target} = %s" for target in changes.keys()]
         targets_str = ", ".join(targets)
@@ -58,19 +47,6 @@ class Logistics(Models, AddressModelDecorator):
         data = tuple(updates + keys)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
-
-    @classmethod
-    def delete(cls, logistics_keys):
-        SQL = "DELETE FROM logistics WHERE dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        data = (logistics_keys['dt_sched'], logistics_keys['renter_id'])
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
-    def refresh(self):
-        logistics_keys = {
-            "dt_sched": self.dt_scheduled,
-            "renter_id": self.renter_id}
-        self = Logistics.get(logistics_keys)
 
 class Pickups(Models):
     table_name = "pickups"
@@ -111,36 +87,6 @@ class Pickups(Models):
             pickup = Pickups.get(db_pickup)
         return pickup
 
-    @classmethod
-    def get(cls, pickup_keys):
-        pickup = None
-        SQL = "SELECT * FROM pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        data = (pickup_keys["pickup_date"], pickup_keys["dt_sched"], pickup_keys["renter_id"])
-        Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
-        if result:
-            db_pickup = sql_to_dictionary(Models.database.cursor, result)
-            pickup = Pickups(db_pickup)
-        return pickup
-
-    @classmethod
-    def set(cls, pickup_keys, changes):
-        targets = [f"{target} = %s" for target in changes.keys()]
-        targets_str = ", ".join(targets)
-        SQL = f"UPDATE pickups SET {targets_str} WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        updates = [value for value in changes.values()]
-        keys = [pickup_keys['pickup_date'], pickup_keys['dt_sched'], pickup_keys['renter_id']]
-        data = tuple(updates + keys)
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
-    @classmethod
-    def delete(cls, pickup_keys):
-        SQL = "DELETE FROM pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        data = (pickup_keys["pickup_date"], pickup_keys["dt_sched"], pickup_keys["renter_id"])
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
     def schedule_orders(self, orders):
         #ASSERT takes a list
         SQL = """
@@ -164,13 +110,6 @@ class Pickups(Models):
         if Models.database.cursor.fetchone() is None:
             Logistics.delete({"dt_sched": self.dt_scheduled, "renter_id": self.renter_id})
         order.is_pickup_scheduled = False
-
-    def refresh(self):
-        pickup_keys = {
-            "pickup_date": self.pickup_date,
-            "dt_sched": self.dt_scheduled,
-            "renter_id": self.renter_id}
-        self = Pickups.get(pickup_keys)
 
 class Dropoffs(Models):
     table_name = "dropoffs"
@@ -211,36 +150,6 @@ class Dropoffs(Models):
             dropoff = Dropoffs.get(db_dropoff)
         return dropoff
 
-    @classmethod
-    def get(cls, dropoff_keys):
-        dropoff = None
-        SQL = "SELECT * FROM dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        data = (dropoff_keys["dropoff_date"], dropoff_keys["dt_sched"], dropoff_keys["renter_id"])
-        Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
-        if result:
-            db_dropoff = sql_to_dictionary(Models.database.cursor, result)
-            dropoff = Dropoffs(db_dropoff)
-        return dropoff
-
-    @classmethod
-    def set(cls, dropoff_keys, changes):
-        targets = [f"{target} = %s" for target in changes.keys()]
-        targets_str = ", ".join(targets)
-        SQL = f"UPDATE dropoffs SET {targets_str} WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        updates = [value for value in changes.values()]
-        keys = [dropoff_keys['dropoff_date'], dropoff_keys['dt_sched'], dropoff_keys['renter_id']]
-        data = tuple(updates + keys)
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
-    @classmethod
-    def delete(cls, dropoff_keys):
-        SQL = f"DELETE FROM dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;" # Note: no quotes
-        data = (dropoff_keys["dropoff_date"], dropoff_keys["dt_sched"], dropoff_keys["renter_id"])
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
     def schedule_orders(self, orders):
         #ASSERT takes a list
         SQL = """
@@ -264,10 +173,3 @@ class Dropoffs(Models):
         if Models.database.cursor.fetchone() is None:
             Logistics.delete({"dt_sched": self.dt_scheduled, "renter_id": self.renter_id})
         order.is_dropoff_scheduled = False
-
-    def refresh(self):
-        dropoff_keys = {
-            "dropoff_date": self.dropoff_date,
-            "dt_sched": self.dt_scheduled,
-            "renter_id": self.renter_id}
-        self = Dropoffs.get(dropoff_keys)

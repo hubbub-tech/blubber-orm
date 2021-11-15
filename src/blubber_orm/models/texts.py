@@ -93,18 +93,6 @@ class Testimonials(Models, UserModelDecorator):
         self.user_id = db_data["user_id"]
 
     @classmethod
-    def get(cls, testimonial_keys):
-        testimonial = None
-        SQL = "SELECT * FROM testimonials WHERE date_created = %s AND user_id = %s;" # Note: no quotes
-        data = (testimonial_keys["date_created"], testimonial_keys["user_id"])
-        Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
-        if result:
-            db_testimonial = sql_to_dictionary(Models.database.cursor, result)
-            testimonial = Testimonials(db_testimonial)
-        return testimonial
-
-    @classmethod
     def set(cls):
         raise Exception("Testimonials are not editable. Make a new one instead.")
 
@@ -138,18 +126,6 @@ class Tags(Models):
             db_tag_by_item = sql_to_dictionary(Models.database.cursor, query)
             tags.append(Tags(db_tag_by_item))
         return tags
-
-    @classmethod
-    def get(cls, tag_name):
-        tag = None
-        SQL = "SELECT * FROM tags WHERE tag_name = %s;" # Note: no quotes
-        data = (tag_name, )
-        Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
-        if result:
-            db_tag = sql_to_dictionary(Models.database.cursor, result)
-            tag = Tags(db_tag)
-        return tag
 
     @classmethod
     def set(cls):

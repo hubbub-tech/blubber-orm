@@ -12,6 +12,8 @@ class LinkedList:
     def __init__(self):
         self.head = None
 
+    # @ param: 'key' -> unique identifier of the value
+    # @ return: the value held at the key or None if key is not held
     def get(self, key):
         current_node = self.head
         if current_node:
@@ -24,6 +26,8 @@ class LinkedList:
             return current_node.value
         return None
 
+    # @ param: 'key' -> unique identifier of the value
+    # @ param: 'value' -> value to be held at the given key
     def put(self, key, value):
         node = Node(key, value)
         current_node = self.head
@@ -34,6 +38,7 @@ class LinkedList:
             current_node = current_node.next
         self.head = node
 
+    # @ param: 'key' -> unique identifier of the value
     def delete(self, key):
         current_node = self.head
         if current_node:

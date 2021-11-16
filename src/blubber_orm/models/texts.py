@@ -1,5 +1,6 @@
-from .db import sql_to_dictionary
-from .base import Models
+from ._conn import sql_to_dictionary
+from ._base import Models
+
 from .items import ItemModelDecorator
 from .users import UserModelDecorator
 
@@ -21,32 +22,33 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
 
     @classmethod
     def by_author(cls, user):
-        #get all items in this general location
-        SQL = "SELECT * FROM reviews WHERE author_id = %s;" # Note: no quotes
+        SQL = "SELECT * FROM reviews WHERE author_id = %s;"
         data = (user.id, )
         Models.database.cursor.execute(SQL, data)
-        reviews = []
         results = Models.database.cursor.fetchall()
-        for query in results:
-            db_review = sql_to_dictionary(Models.database.cursor, query)
-            reviews.append(Reviews(db_review))
+
+        reviews = []
+        for result in results:
+            review_dict = sql_to_dictionary(Models.database.cursor, result)
+            review = Reviews(review_dict)
+            reviews.append(review)
         return reviews
+
 
     @classmethod
     def by_item(cls, item):
-        #get all items in this general location
-        SQL = "SELECT * FROM reviews WHERE item_id = %s;" # Note: no quotes
+        SQL = "SELECT * FROM reviews WHERE item_id = %s;"
         data = (item.id, )
         Models.database.cursor.execute(SQL, data)
-        reviews = []
         results = Models.database.cursor.fetchall()
-        for query in results:
-            db_review = sql_to_dictionary(Models.database.cursor, query)
-            reviews.append(Reviews(db_review))
+
+        reviews = []
+        for result in results:
+            review_dict = sql_to_dictionary(Models.database.cursor, result)
+            review = Reviews(review_dict)
+            reviews.append(review)
         return reviews
 
-    def refresh(self):
-        self = Reviews.get(self.id)
 
 class Issues(Models, UserModelDecorator):
     table_name = "issues"
@@ -68,6 +70,7 @@ class Issues(Models, UserModelDecorator):
         data = (True, comments, self.id)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
+
         self.resolution = comments
         self.is_resolved = True
 
@@ -76,10 +79,8 @@ class Issues(Models, UserModelDecorator):
         data = (False, self.id)
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
-        self.is_resolved = False
 
-    def refresh(self):
-        self = Issues.get(self.id)
+        self.is_resolved = False
 
 class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"
@@ -105,13 +106,16 @@ class Tags(Models):
 
     @classmethod
     def by_item(cls, item):
-        SQL = "SELECT * FROM tagging WHERE item_id = %s;"
+        SQL = "SELECT tag_name FROM tagging WHERE item_id = %s;"
         data = (item.id, )
         Models.database.cursor.execute(SQL, data)
+        results = Models.database.cursor.fetchall()
+
         tags = []
-        for query in Models.database.cursor.fetchall():
-            db_tag_by_item = sql_to_dictionary(Models.database.cursor, query)
-            tags.append(Tags(db_tag_by_item))
+        for result in results:
+            tag_name, = result
+            tag = Tags({"tag_name": tag_name})
+            tags.append(tag)
         return tags
 
     @classmethod

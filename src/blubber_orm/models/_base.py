@@ -2,7 +2,7 @@ import json
 import psycopg2
 from datetime import datetime, date, time
 from abc import ABC, abstractmethod
-from .db import DatabaseConnection, sql_to_dictionary
+from ._conn import DatabaseConnection, sql_to_dictionary
 
 from utils import generate_conditions_input, generate_data_input
 
@@ -152,26 +152,8 @@ class Models(AbstractModels):
         if result is None: return None
 
         _instance_dict = sql_to_dictionary(Models.database.cursor, result)
-        _instance = cls(db_instance_dict)
+        _instance = cls(_instance_dict)
         return _instance
-
-    @classmethod
-    def get_all(cls):
-        is_debugging = Models.database._debug
-
-        SQL = f"SELECT * FROM {cls.table_name};"
-
-        Models.database.cursor.execute(SQL)
-        results = Models.database.cursor.fetchall()
-
-        if is_debugging: print("SQL command: ", SQL)
-
-        _instances = []
-        for result in results:
-            _instance_dict = sql_to_dictionary(Models.database.cursor, result)
-            _instance = cls(_instance_dict)
-            _instances.append(_instance)
-        return _instances
 
     @classmethod
     def set(cls, pkeys, changes):
@@ -195,6 +177,38 @@ class Models(AbstractModels):
         if is_debugging: print("SQL command: ", SQL)
 
     @classmethod
+    def delete(cls, pkeys):
+        is_debugging = Models.database._debug
+
+        conds = generate_conditions_input(cls.table_primaries, pkeys)
+        data = generate_data_input(cls.table_primaries, pkeys)
+
+        SQL = f"DELETE FROM {cls.table_name} WHERE {conds};" # Note: no quotes
+
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
+
+        if is_debugging: print("SQL command: ", SQL, data)
+
+    @classmethod
+    def get_all(cls):
+        is_debugging = Models.database._debug
+
+        SQL = f"SELECT * FROM {cls.table_name};"
+
+        Models.database.cursor.execute(SQL)
+        results = Models.database.cursor.fetchall()
+
+        if is_debugging: print("SQL command: ", SQL)
+
+        _instances = []
+        for result in results:
+            _instance_dict = sql_to_dictionary(Models.database.cursor, result)
+            _instance = cls(_instance_dict)
+            _instances.append(_instance)
+        return _instances
+
+    @classmethod
     def filter(cls, filters):
         assert isinstance(filters, dict)
         assert cls.verify_attributes(filters.keys())
@@ -203,7 +217,7 @@ class Models(AbstractModels):
         data = tuple(filters.values())
         conds = " AND ".join([f"{key} = %s" for key in filters.keys()])
 
-        SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};" # Note: no quotes
+        SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
         Models.database.cursor.execute(SQL, data)
         results = Models.database.cursor.fetchall()
 
@@ -215,6 +229,27 @@ class Models(AbstractModels):
             _instance = cls(_instance_dict)
             _instances.append(_instance)
         return _instances
+
+    # @notice: operates like Models.filter() but promises to only return 1 result
+    @classmethod
+    def unique(cls, filters):
+        assert isinstance(filters, dict)
+        assert cls.verify_attributes(filters.keys())
+        is_debugging = Models.database._debug
+
+        data = tuple(filters.values())
+        conds = " AND ".join([f"{key} = %s" for key in filters.keys()])
+        SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
+        Models.database.cursor.execute(SQL, data)
+        result = Models.database.cursor.fetchall()
+
+        if is_debugging: print("SQL command: ", SQL)
+        assert len(result) <= 1, "The set of filters used are not unique to one row."
+
+        result, = result
+        _instance_dict = sql_to_dictionary(Models.database.cursor, result)
+        _instance = cls(_instance_dict)
+        return _instance
 
     @classmethod
     def like(cls, condition, value):
@@ -234,20 +269,6 @@ class Models(AbstractModels):
             _instance = cls(_instance_dict)
             _instances.append()
         return _instances
-
-    @classmethod
-    def delete(cls, pkeys):
-        is_debugging = Models.database._debug
-
-        conds = generate_conditions_input(cls.table_primaries, pkeys)
-        data = generate_data_input(cls.table_primaries, pkeys)
-
-        SQL = f"DELETE FROM {cls.table_name} WHERE {conds};" # Note: no quotes
-
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-
-        if is_debugging: print("SQL command: ", SQL, data)
 
     @classmethod
     def verify_attributes(cls, query_attributes: list) -> bool:
@@ -280,6 +301,23 @@ class Models(AbstractModels):
 
             if is_debugging: print("Table aattributes are initialized as: ", cls.table_attributes)
         return cls.table_attributes
+
+    @classmethod
+    def does_row_exist(cls, attributes, table=None):
+        assert isinstance(attributes, dict)
+        assert cls.verify_attributes(attributes.keys())
+        is_debugging = Models.database._debug
+
+        conds = generate_conditions_input(attributes.keys(), attributes)
+        data = tuple(attributes.values())
+
+        if table is None: table = cls.table_name
+
+        SQL = f"SELECT * FROM {table} WHERE {conds};"
+        Models.database.cursor.execute(SQL, data)
+
+        if is_debugging: print("SQL command: ", SQL)
+        return Models.database.cursor.fetchone() is not None
 
     def to_dict(self, serializable=True):
         _self_dict = self.__dict__

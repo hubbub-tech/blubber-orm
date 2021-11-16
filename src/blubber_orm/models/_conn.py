@@ -6,10 +6,10 @@ from uritools import urisplit
 #postgres app website: https://postgresapp.com/documentation/cli-tools.html
 test_db_uri = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"
 
-def sql_to_dictionary(cursor, sql_query):
+def sql_to_dictionary(cursor, result):
     to_dictionary = {}
-    for attr_index, attribute in enumerate(cursor.description):
-        to_dictionary[attribute.name] = sql_query[attr_index]
+    for index, attr in enumerate(cursor.description):
+        to_dictionary[attr.name] = result[index]
     return to_dictionary
 
 def parse_uri(database_uri):

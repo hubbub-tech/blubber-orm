@@ -1,8 +1,9 @@
 import calendar as calpy
 from datetime import datetime, date, timedelta
 
-from .db import sql_to_dictionary
-from .base import Models
+from ._conn import sql_to_dictionary
+from ._base import Models
+
 from .addresses import AddressModelDecorator
 from .reservations import Reservations #for calendars
 
@@ -16,7 +17,7 @@ class ItemModelDecorator:
     def item(self):
         ChildModelsClass = type(self)
         assert ChildModelsClass.__dict__.get("item_id")
-        return Items.get(self.item_id)
+        return Items.get({"id": self.item_id})
 
 class Items(Models, AddressModelDecorator):
     table_name = "items"
@@ -34,8 +35,8 @@ class Items(Models, AddressModelDecorator):
         self.dt_created = db_data["dt_created"]
 
         self.price = db_data["price"]
-        self._is_available = db_data["is_available"]
-        self._is_featured = db_data["is_featured"]
+        self.is_available = db_data["is_available"]
+        self.is_featured = db_data["is_featured"]
 
         self.is_locked = db_data["is_locked"]
         self.is_routed = db_data["is_routed"]
@@ -48,36 +49,12 @@ class Items(Models, AddressModelDecorator):
         self._address_zip = db_data["address_zip"]
 
     @property
-    def is_available(self):
-        return self._is_available
-
-    @is_available.setter
-    def is_available(self, is_available):
-        SQL = "UPDATE items SET is_available = %s WHERE id = %s;" # Note: no quotes
-        data = (is_available, self.id)
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-        self._is_available = is_available
-
-    @property
-    def is_featured(self):
-        return self._is_featured
-
-    @is_featured.setter
-    def is_featured(self, is_featured):
-        SQL = "UPDATE items SET is_featured = %s WHERE id = %s;" # Note: no quotes
-        data = (is_featured, self.id)
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-        self._is_featured = is_featured
-
-    @property
     def details(self):
-        return Details.get(self.id)
+        return Details.get({"id": self.id})
 
     @property
     def calendar(self):
-        return Calendars.get(self.id)
+        return Calendars.get({"id": self.id})
 
     @classmethod
     def by_address(cls, address):
@@ -87,7 +64,7 @@ class Items(Models, AddressModelDecorator):
                 AND address_street = %s
                 AND address_apt = %s
                 AND address_zip = %s;"""
-        data = (address.num, address.street, address.apt, address.zip_code)
+        data = (address.num, address.street, address.apt, address.zip)
         Models.database.cursor.execute(SQL, data)
         results = Models.database.cursor.fetchall()
 
@@ -137,7 +114,7 @@ class Items(Models, AddressModelDecorator):
         items = []
         for result in results:
             item_id, = result
-            item = Items.get(item_id)
+            item = Items.get({"id": item_id})
             items.append(item)
         return items
 

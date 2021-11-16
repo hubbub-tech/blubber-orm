@@ -1,8 +1,9 @@
 import pytz
 from datetime import datetime, date, timedelta
 
-from .db import sql_to_dictionary
-from .base import Models
+from ._conn import sql_to_dictionary
+from ._base import Models
+
 from .users import Users # for order.lister
 from .reservations import Reservations, ReservationModelDecorator
 
@@ -16,7 +17,7 @@ class OrderModelDecorator:
     def order(self):
         ChildModelsClass = type(self)
         assert ChildModelsClass.__dict__.get("order_id")# ModelsClass must be compatible
-        return Orders.get(self.order_id)
+        return Orders.get({"id": self.order_id})
 
 class Orders(Models, ReservationModelDecorator):
     table_name = "orders"
@@ -35,8 +36,8 @@ class Orders(Models, ReservationModelDecorator):
         self.id = db_data["id"] #primary key
         self.date_placed = db_data["date_placed"]
         self.is_online_pay = db_data["is_online_pay"]
-        self._is_dropoff_scheduled = db_data["is_dropoff_sched"]
-        self._is_pickup_scheduled = db_data["is_pickup_sched"]
+        self.is_dropoff_sched = db_data["is_dropoff_sched"]
+        self.is_pickup_sched = db_data["is_pickup_sched"]
         self.lister_id = db_data["lister_id"]
         #reservation
         self.res_date_start = db_data["res_date_start"]
@@ -66,29 +67,6 @@ class Orders(Models, ReservationModelDecorator):
         else: self._ext_date_end = self.res_date_end
         return self._ext_date_end
 
-    @property
-    def is_dropoff_scheduled(self):
-        return self._is_dropoff_scheduled
-
-    @is_dropoff_scheduled.setter
-    def is_dropoff_scheduled(self, is_dropoff_scheduled):
-        SQL = "UPDATE orders SET is_dropoff_sched = %s WHERE id = %s;" # Note: no quotes
-        data = (is_dropoff_scheduled, self.id)
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-        self._is_dropoff_scheduled = is_dropoff_scheduled
-
-    @property
-    def is_pickup_scheduled(self):
-        return self._is_pickup_scheduled
-
-    @is_pickup_scheduled.setter
-    def is_pickup_scheduled(self, is_pickup_scheduled):
-        SQL = "UPDATE orders SET is_pickup_sched = %s WHERE id = %s;" # Note: no quotes
-        data = (is_pickup_scheduled, self.id)
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
-        self._is_pickup_scheduled = is_pickup_scheduled
 
     @property
     def extensions(self):
@@ -141,25 +119,29 @@ class Orders(Models, ReservationModelDecorator):
     @classmethod
     def by_pickup(cls, pickup):
         SQL = "SELECT order_id FROM order_pickups WHERE pickup_date = %s AND dt_sched = %s AND renter_id = %s;"
-        data = (pickup.pickup_date, pickup.dt_scheduled, pickup.renter_id)
+        data = (pickup.pickup_date, pickup.dt_sched, pickup.renter_id)
         Models.database.cursor.execute(SQL, data)
         results = Models.database.cursor.fetchall()
         ids = results.copy()
 
         orders = []
-        for order_id in ids: orders.append(Orders.get(order_id))
+        for order_id in ids:
+            order = Orders.get({"id": order_id})
+            orders.append(order)
         return orders
 
     @classmethod
     def by_dropoff(cls, dropoff):
         SQL = "SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;"
-        data = (dropoff.dropoff_date, dropoff.dt_scheduled, dropoff.renter_id)
+        data = (dropoff.dropoff_date, dropoff.dt_sched, dropoff.renter_id)
         Models.database.cursor.execute(SQL, data)
         results = Models.database.cursor.fetchall()
         ids = results.copy()
 
         orders = []
-        for order_id in ids: orders.append(Orders.get(order_id))
+        for order_id in ids:
+            order = Orders.get({"id": order_id})
+            orders.append(order)
         return orders
 
 class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):

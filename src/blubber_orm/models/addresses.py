@@ -1,5 +1,5 @@
-from .db import sql_to_dictionary
-from .base import Models
+from ._conn import sql_to_dictionary
+from ._base import Models
 
 class AddressModelDecorator:
     """
@@ -30,10 +30,10 @@ class Addresses(Models):
         self.apt = db_data["apt"]
         self.city = db_data["city"]
         self.state = db_data["state"]
-        self.zip_code = db_data["zip"]
+        self.zip = db_data["zip"]
 
     def display(self):
-        return f"{self.num} {self.street}, {self.city}, {self.state} {self.zip_code}"
+        return f"{self.num} {self.street}, {self.city}, {self.state} {self.zip}"
 
     def region(self):
         return f"{self.city}, {self.state}"

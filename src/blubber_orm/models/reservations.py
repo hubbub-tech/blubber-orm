@@ -1,5 +1,5 @@
-from .db import sql_to_dictionary
-from .base import Models
+from ._conn import sql_to_dictionary
+from ._base import Models
 
 from utils.structs import LinkedList
 
@@ -11,8 +11,8 @@ class ReservationModelDecorator:
 
     @property
     def reservation(self):
-        ChildModelClass = type(self)
-        assert ChildModelClass.__dict__.get("res_date_start") # ModelsClass must be compatible
+        ChildModelsClass = type(self)
+        assert ChildModelsClass.__dict__.get("res_date_start") # ModelsClass must be compatible
 
         reservation_keys = {
             "date_started": self.res_date_start,

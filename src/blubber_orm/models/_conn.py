@@ -4,7 +4,7 @@ from uritools import urisplit
 
 #postgres app commands: https://kb.objectrocket.com/postgresql/how-to-run-an-sql-file-in-postgres-846
 #postgres app website: https://postgresapp.com/documentation/cli-tools.html
-test_db_uri = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"
+TEST_URI = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"
 
 def sql_to_dictionary(cursor, result):
     to_dictionary = {}
@@ -71,7 +71,7 @@ class DatabaseConnection:
         cur = None
         try:
             #build exception for when URI cannot be found in environment
-            database_uri = os.environ.get("DATABASE_URL", test_db_uri)
+            database_uri = os.environ.get("DATABASE_URL", TEST_URI)
             credentials = parse_uri(database_uri)
         except AssertionError as not_postgres_error:
             #TODO: log error to file with traceback

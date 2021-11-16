@@ -42,11 +42,6 @@ Create a play-version of the Hubbub database and fill it with dummy data under /
 
 Blubber is currently not taking contributions. This policy may change in the future.
 
-## Authors
-
-* **Ade Balogun** - *Initial work* - [Baloguna16](https://github.com/Baloguna16)
-* **Caro Perez** - *Initial work* - [avocaro-tech](https://github.com/avocaro-tech)
-
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LICENSE.md) file for details

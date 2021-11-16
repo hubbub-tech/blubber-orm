@@ -9,14 +9,13 @@ class AddressModelDecorator:
 
     @property
     def address(self):
-        ChildModelsClass = type(self)
-        assert ChildModelsClass.__dict__.get("_address_num")
+        assert self.__dict__.get("address_num") is not None
 
         address_keys = {
-            "num": self._address_num,
-            "street": self._address_street,
-            "apt": self._address_apt,
-            "zip": self._address_zip
+            "num": self.address_num,
+            "street": self.address_street,
+            "apt": self.address_apt,
+            "zip": self.address_zip
         }
         return Addresses.get(address_keys)
 

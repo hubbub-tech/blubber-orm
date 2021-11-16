@@ -12,18 +12,12 @@ class UserModelDecorator:
 
     @property
     def user(self):
-        ChildModelsClass = type(self)
-        assert ChildModelsClass.__dict__.get("user_id")
+        assert self.__dict__.get("user_id") is not None
         return Users.get({"id": self.user_id})
 
 class Users(Models, AddressModelDecorator):
     table_name = "users"
     table_primaries = ["id"]
-
-    _address_num = None
-    _address_street = None
-    _address_apt = None
-    _address_zip = None
 
     def __init__(self, db_data):
         #attributes
@@ -37,10 +31,10 @@ class Users(Models, AddressModelDecorator):
         self.is_blocked = db_data["is_blocked"]
         self.session = db_data["session"]
         #address
-        self._address_num = db_data["address_num"]
-        self._address_street = db_data["address_street"]
-        self._address_apt = db_data["address_apt"]
-        self._address_zip = db_data["address_zip"]
+        self.address_num = db_data["address_num"]
+        self.address_street = db_data["address_street"]
+        self.address_apt = db_data["address_apt"]
+        self.address_zip = db_data["address_zip"]
 
     @property
     def cart(self):
@@ -204,8 +198,6 @@ class Profiles(Models, UserModelDecorator):
     table_name = "profiles"
     table_primaries = ["id"]
 
-    user_id = None
-
     def __init__(self, db_data):
         self.user_id = db_data["id"]
         self.phone = db_data["phone"]
@@ -218,7 +210,6 @@ class Carts(Models, UserModelDecorator):
     table_primaries = ["id"]
 
     _contents = None
-    user_id = None
 
     def __init__(self, db_data):
         #attributes

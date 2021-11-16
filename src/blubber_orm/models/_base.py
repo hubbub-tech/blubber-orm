@@ -4,7 +4,7 @@ from datetime import datetime, date, time
 from abc import ABC, abstractmethod
 from ._conn import DatabaseConnection, sql_to_dictionary
 
-from utils import generate_conditions_input, generate_data_input
+from blubber_orm.utils import generate_conditions_input, generate_data_input
 
 class AbstractModels(ABC):
     """
@@ -30,8 +30,8 @@ class AbstractModels(ABC):
     """
 
     table_name = None
-    table_columns = None
     table_primaries = None
+    table_attributes = None
     database = DatabaseConnection.get_instance()
 
     @classmethod
@@ -81,7 +81,7 @@ class AbstractModels(ABC):
 
     @classmethod
     @abstractmethod
-    def _get_columns(cls) -> list:
+    def _get_attributes(cls) -> list:
         """
         An internal function which calls the columns for the table linked to the
         model.
@@ -210,8 +210,10 @@ class Models(AbstractModels):
 
     @classmethod
     def filter(cls, filters):
+        filter_keys = [key for key in filters.keys()]
+
         assert isinstance(filters, dict)
-        assert cls.verify_attributes(filters.keys())
+        assert cls.verify_attributes(filter_keys)
         is_debugging = Models.database._debug
 
         data = tuple(filters.values())
@@ -233,8 +235,10 @@ class Models(AbstractModels):
     # @notice: operates like Models.filter() but promises to only return 1 result
     @classmethod
     def unique(cls, filters):
+        filter_keys = [key for key in filters.keys()]
+
         assert isinstance(filters, dict)
-        assert cls.verify_attributes(filters.keys())
+        assert cls.verify_attributes(filter_keys)
         is_debugging = Models.database._debug
 
         data = tuple(filters.values())
@@ -285,7 +289,7 @@ class Models(AbstractModels):
         attribute = set([_attribute])
         table_attributes = cls._get_attributes()
         if attribute.issubset(table_attributes):
-            if len(_query_column_names) == 0: return True
+            if len(_query_attributes) == 0: return True
             else: return cls.verify_attributes(_query_attributes)
 
         raise Excetion(f"NotTableAttributeError, {_attribute} is not an attribute of {cls.table_name}.")
@@ -304,8 +308,10 @@ class Models(AbstractModels):
 
     @classmethod
     def does_row_exist(cls, attributes, table=None):
+        attr_keys = [key for key in attributes.keys()]
+
         assert isinstance(attributes, dict)
-        assert cls.verify_attributes(attributes.keys())
+        assert cls.verify_attributes(attr_keys)
         is_debugging = Models.database._debug
 
         conds = generate_conditions_input(attributes.keys(), attributes)

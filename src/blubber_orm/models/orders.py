@@ -15,8 +15,7 @@ class OrderModelDecorator:
 
     @property
     def order(self):
-        ChildModelsClass = type(self)
-        assert ChildModelsClass.__dict__.get("order_id")# ModelsClass must be compatible
+        assert self.__dict__.get("order_id") is not None
         return Orders.get({"id": self.order_id})
 
 class Orders(Models, ReservationModelDecorator):
@@ -25,11 +24,6 @@ class Orders(Models, ReservationModelDecorator):
 
     _ext_date_start = None
     _ext_date_end = None
-
-    res_date_start = None
-    res_date_end = None
-    renter_id = None
-    item_id = None
 
     def __init__(self, db_data):
         #attributes
@@ -96,7 +90,7 @@ class Orders(Models, ReservationModelDecorator):
         Models.database.cursor.execute(SQL1, data1)
         result = Models.database.cursor.fetchone()
 
-        assert result, "This order-dropoff relationship does not exist."
+        assert result is not None, "This order-dropoff relationship does not exist."
         if dt_completed is None: dt_completed = datetime.now(tz=pytz.UTC)
         SQL2 = "UPDATE order_dropoffs SET dt_completed = %s WHERE order_id = %s;"
         data2 = (dt_completed, self.id)
@@ -109,7 +103,7 @@ class Orders(Models, ReservationModelDecorator):
         Models.database.cursor.execute(SQL1, data1)
         result = Models.database.cursor.fetchone()
 
-        assert result, "This order-dropoff relationship does not exist."
+        assert result is not None, "This order-dropoff relationship does not exist."
         if dt_completed is None: dt_completed = datetime.now(tz=pytz.UTC)
         SQL2 = "UPDATE order_pickups SET dt_completed = %s WHERE order_id = %s;"
         data2 = (dt_completed, self.id)
@@ -148,13 +142,6 @@ class Extensions(Models, OrderModelDecorator, ReservationModelDecorator):
 
     table_name = "extensions"
     table_primaries = ["order_id", "res_date_end"]
-
-    res_date_start = None
-    res_date_end = None
-    renter_id = None
-    item_id = None
-
-    order_id = None
 
     def __init__(self, db_data):
         #order

@@ -15,18 +15,12 @@ class ItemModelDecorator:
 
     @property
     def item(self):
-        ChildModelsClass = type(self)
-        assert ChildModelsClass.__dict__.get("item_id")
+        assert self.__dict__.get("item_id") is not None
         return Items.get({"id": self.item_id})
 
 class Items(Models, AddressModelDecorator):
     table_name = "items"
     table_primaries = ["id"]
-
-    _address_num = None
-    _address_street = None
-    _address_apt = None
-    _address_zip = None
 
     def __init__(self, db_data):
         #attributes
@@ -43,10 +37,10 @@ class Items(Models, AddressModelDecorator):
         self.last_locked = db_data["last_locked"]
         self.lister_id = db_data["lister_id"]
         #address
-        self._address_num = db_data["address_num"]
-        self._address_street = db_data["address_street"]
-        self._address_apt = db_data["address_apt"]
-        self._address_zip = db_data["address_zip"]
+        self.address_num = db_data["address_num"]
+        self.address_street = db_data["address_street"]
+        self.address_apt = db_data["address_apt"]
+        self.address_zip = db_data["address_zip"]
 
     @property
     def details(self):
@@ -155,8 +149,6 @@ class Details(Models, ItemModelDecorator):
     table_name = "details"
     table_primaries = ["id"]
 
-    item_id = None
-
     def __init__(self, db_data):
         self.item_id = db_data["id"]
         self.description = db_data["description"]
@@ -197,8 +189,6 @@ class Details(Models, ItemModelDecorator):
 class Calendars(Models, ItemModelDecorator):
     table_name = "calendars"
     table_primaries = ["id"]
-
-    item_id = None
 
     def __init__(self, db_data):
         self.item_id = db_data["id"]

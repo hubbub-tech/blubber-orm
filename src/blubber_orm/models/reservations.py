@@ -1,7 +1,7 @@
 from ._conn import sql_to_dictionary
 from ._base import Models
 
-from utils.structs import LinkedList
+from blubber_orm.utils.structs import LinkedList
 
 class ReservationModelDecorator:
     """
@@ -11,8 +11,7 @@ class ReservationModelDecorator:
 
     @property
     def reservation(self):
-        ChildModelsClass = type(self)
-        assert ChildModelsClass.__dict__.get("res_date_start") # ModelsClass must be compatible
+        assert self.__dict__.get("res_date_start") is not None
 
         reservation_keys = {
             "date_started": self.res_date_start,

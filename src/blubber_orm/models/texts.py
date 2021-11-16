@@ -8,9 +8,6 @@ class Reviews(Models, UserModelDecorator, ItemModelDecorator):
     table_name = "reviews"
     table_primaries = ["id"]
 
-    user_id = None
-    item_id = None
-
     def __init__(self, db_data):
         #attributes
         self.id = db_data["id"]
@@ -54,8 +51,6 @@ class Issues(Models, UserModelDecorator):
     table_name = "issues"
     table_primaries = ["id"]
 
-    user_id = None
-
     def __init__(self, db_data):
         self.id = db_data["id"]
         self.link = db_data["link"]
@@ -85,8 +80,6 @@ class Issues(Models, UserModelDecorator):
 class Testimonials(Models, UserModelDecorator):
     table_name = "testimonials"
     table_primaries = ["date_created", "user_id"]
-
-    user_id = None
 
     def __init__(self, db_data):
         self.date_created = db_data["date_created"]

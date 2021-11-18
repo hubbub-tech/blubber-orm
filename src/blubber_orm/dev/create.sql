@@ -34,16 +34,16 @@ CREATE TABLE profiles (
   phone varchar(20),
   has_pic boolean DEFAULT FALSE,
   bio text,
-  id integer, --user id
+  id integer,
   PRIMARY KEY (id),
   FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE carts (
   total float DEFAULT 0.0,
-  total_deposit float DEFAULT 0.0, -- Ade 5/4 - needed a way to track deposits as well
+  total_deposit float DEFAULT 0.0,
   total_tax float DEFAULT 0.0,
-  id integer, -- user id
+  id integer,
   PRIMARY KEY (id),
   FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE
 );
@@ -73,7 +73,7 @@ CREATE TABLE details (
   weight integer,
   volume integer,
   description text,
-  id integer, -- item id
+  id integer,
   PRIMARY KEY (id),
   FOREIGN KEY (id) REFERENCES items (id) ON DELETE CASCADE
 );
@@ -81,7 +81,7 @@ CREATE TABLE details (
 CREATE TABLE calendars (
   date_started date,
   date_ended date,
-  id integer, -- item id
+  id integer,
   PRIMARY KEY (id),
   FOREIGN KEY (id) REFERENCES items (id) ON DELETE CASCADE
 );
@@ -96,8 +96,8 @@ CREATE TABLE shopping (
 
 CREATE TABLE couriers (
   courier_id integer,
-  session varchar(20),
-  is_admin boolean DEFAULT FALSE,
+  session varchar(20), -- ade 11/16
+  is_admin boolean DEFAULT FALSE, -- ade 11/16
   PRIMARY KEY (courier_id),
   FOREIGN KEY (courier_id) REFERENCES users (id) ON DELETE CASCADE
 );
@@ -114,12 +114,14 @@ CREATE TABLE renters (
   FOREIGN KEY (renter_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+-- ade 11/16
 CREATE TABLE payers (
   payer_id integer,
   PRIMARY KEY (payer_id),
   FOREIGN KEY (payer_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+-- ade 11/16
 CREATE TABLE payees (
   payee_id integer,
   PRIMARY KEY (payee_id),
@@ -131,37 +133,40 @@ CREATE TABLE reservations (
   date_ended date,
   is_calendared boolean DEFAULT FALSE,
   is_extended boolean DEFAULT FALSE,
-  is_in_cart boolean DEFAULT FALSE, -- ade 5/5 - needed to tell which res is in cart
+  is_in_cart boolean DEFAULT FALSE,
   renter_id integer,
   item_id integer,
   charge float,
   deposit float,
   tax float,
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
-  is_valid boolean DEFAULT TRUE,
-  hist_renter_id integer, --must be same as order renter_id
-  hist_item_id integer, --must be same as order item_id
-  hist_date_start date, --this must equal either order end date or end date of last extension
-  hist_date_end date, --this is the extension end date
+  is_valid boolean DEFAULT TRUE, -- ade 11/16
+  hist_renter_id integer, --must be same as order renter_id -- ade 11/16
+  hist_item_id integer, --must be same as order item_id -- ade 11/16
+  hist_date_start date, --this must equal either order end date or end date of last extension -- ade 11/16
+  hist_date_end date, --this is the extension end date -- ade 11/16
   PRIMARY KEY (date_started, date_ended, renter_id, item_id),
   FOREIGN KEY (renter_id) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE,
-  FOREIGN KEY (hist_date_start, hist_date_end, hist_renter_id, hist_item_id) REFERENCES history (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE
+  FOREIGN KEY (hist_date_start, hist_date_end, hist_renter_id, hist_item_id) REFERENCES history (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE -- ade 11/16
+);
 
+-- ade 11/16
 CREATE TABLE history (
   date_started date,
   date_ended date,
   renter_id integer,
   item_id integer,
   PRIMARY KEY (date_started, date_ended, renter_id, item_id),
-  FOREIGN KEY (date_started, date_ended, renter_id, item_id) REFERENCES reservations (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE
+  FOREIGN KEY (renter_id) REFERENCES users (id) ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
 );
 
 CREATE TABLE orders (
   id SERIAL,
   date_placed date,
   is_online_pay boolean,
-  is_cancelled boolean DEFAULT FALSE,
+  is_cancelled boolean DEFAULT FALSE, -- ade 11/16
   is_dropoff_sched boolean DEFAULT FALSE,
   is_pickup_sched boolean DEFAULT FALSE,
   lister_id integer,
@@ -196,15 +201,16 @@ CREATE TABLE testimonials (
 
 CREATE TABLE extensions (
   order_id integer,
-  renter_id integer, --must be same as order renter_id
-  item_id integer, --must be same as order item_id
-  res_date_start date, --this must equal either order end date or end date of last extension
-  res_date_end date, --this is the extension end date
+  renter_id integer,
+  item_id integer,
+  res_date_start date,
+  res_date_end date,
   PRIMARY KEY (order_id, res_date_end),
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
   FOREIGN KEY (res_date_start, res_date_end, renter_id, item_id) REFERENCES reservations (date_started, date_ended, renter_id, item_id) ON DELETE CASCADE
 );
 
+-- ade 11/16
 CREATE TABLE charges (
   id SERIAL,
   notes text
@@ -214,7 +220,7 @@ CREATE TABLE charges (
   order_id integer,
   payee_id integer,
   payer_id integer,
-  issue_id integer, --optional
+  issue_id integer, -- optional
   PRIMARY KEY (id),
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
   FOREIGN KEY (payee_id) REFERENCES payees (payee_id) ON DELETE CASCADE,
@@ -229,13 +235,14 @@ CREATE TABLE logistics (
   timeslots text,
   renter_id integer,
   chosen_time time,
-  courier_id integer,
+  courier_id integer, -- ade 11/16
   address_num integer,
   address_street varchar(100),
   address_apt varchar(50),
   address_zip varchar(10),
   PRIMARY KEY (dt_sched, renter_id),
   FOREIGN KEY (renter_id) REFERENCES renters (renter_id),
+  FOREIGN KEY (courier_id) REFERENCES couriers (courier_id), -- ade 11/16
   FOREIGN KEY (address_num, address_street, address_apt, address_zip) REFERENCES addresses (num, street, apt, zip)
 );
 
@@ -301,6 +308,3 @@ CREATE TABLE issues (
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
-
--- needed to drop the following--see data migration notes - caro 5/4
--- ALTER TABLE extensions ADD CONSTRAINT chk_ext_date CHECK (ext_date_end > localtimestamp);

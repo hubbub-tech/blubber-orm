@@ -49,7 +49,7 @@ class AbstractModels(ABC):
 
     @classmethod
     @abstractmethod
-    def get(cls, id) -> AbstractModels:
+    def get(cls, pkeys: dict) -> AbstractModels:
         """
         Get a row of data from the table connected to the child model by the
         primary key(s).
@@ -64,7 +64,7 @@ class AbstractModels(ABC):
 
     @classmethod
     @abstractmethod
-    def set(cls, id, attributes: dict):
+    def set(cls, pkeys: dict, attributes: dict):
         """
         Edit data in a particular row by passing its primary key(s) and the changes
         in a dictionary.
@@ -130,8 +130,6 @@ class Models(AbstractModels):
         if is_debugging: print("SQL command: ", SQL)
         pkey_returned = sql_to_dictionary(Models.database.cursor, result)
 
-        # @notice: if there is only one pkey, then just get the value for an input to Models.get()
-        if len(pkey_returned) == 1: pkey_returned = pkey_returned[cls.table_primaries[0]]
         _instance = cls.get(pkey_returned)
         return _instance
 
@@ -166,9 +164,7 @@ class Models(AbstractModels):
         where_data = generate_data_input(cls.table_primaries, pkeys)
         where_conds = generate_conditions_input(cls.table_primaries, pkeys)
 
-        updates = [parameters for parameters in attributes.values()]
-
-        SQL = f"UPDATE {cls.table_name} SET {set_conds} WHERE {where_conds};" # Note: no quotes
+        SQL = f"UPDATE {cls.table_name} SET {set_conds} WHERE {where_conds};"
         data = set_data + where_data
 
         Models.database.cursor.execute(SQL, data)
@@ -248,7 +244,9 @@ class Models(AbstractModels):
         result = Models.database.cursor.fetchall()
 
         if is_debugging: print("SQL command: ", SQL)
-        assert len(result) <= 1, "The set of filters used are not unique to one row."
+        if len(result) == 0: return None
+
+        assert len(result) == 1, "The set of filters applied are not unique to one row."
 
         result, = result
         _instance_dict = sql_to_dictionary(Models.database.cursor, result)
@@ -271,7 +269,7 @@ class Models(AbstractModels):
         for result in results:
             _instance_dict = sql_to_dictionary(Models.database.cursor, result)
             _instance = cls(_instance_dict)
-            _instances.append()
+            _instances.append(_instance)
         return _instances
 
     @classmethod
@@ -307,7 +305,7 @@ class Models(AbstractModels):
         return cls.table_attributes
 
     @classmethod
-    def does_row_exist(cls, attributes, table=None):
+    def does_row_exist(cls, attributes):
         attr_keys = [key for key in attributes.keys()]
 
         assert isinstance(attributes, dict)
@@ -317,9 +315,7 @@ class Models(AbstractModels):
         conds = generate_conditions_input(attributes.keys(), attributes)
         data = tuple(attributes.values())
 
-        if table is None: table = cls.table_name
-
-        SQL = f"SELECT * FROM {table} WHERE {conds};"
+        SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
         Models.database.cursor.execute(SQL, data)
 
         if is_debugging: print("SQL command: ", SQL)

@@ -343,11 +343,14 @@ class Carts(Models, UserModelDecorator):
 
     def contains(self, item):
         """Check if the cart contains this item."""
-        return Models.does_row_exist({
-                "cart_id": self.user_id,
-                "item_id": item.id
-            }, table="shopping"
-        )
+
+        SQL = f"SELECT * FROM shopping WHERE cart_id = %s AND item_id = %s;"
+        data = (self.user_id, item.id)
+
+        Models.database.cursor.execute(SQL, data)
+        result = Models.database.cursor.fetchone()
+
+        return result is not None
 
     def get_reserved_contents(self):
         SQL = """

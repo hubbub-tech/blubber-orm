@@ -188,7 +188,7 @@ class Couriers(Models, UserModelDecorator):
 
     def __init__(self, db_data):
         self.courier_id = db_data["courier_id"]
-        self._session = dt_data["session"]
+        self.session = dt_data["session"]
         self.is_admin = dt_data["is_admin"]
 
         self.user_id = db_data["courier_id"]
@@ -240,11 +240,10 @@ class Carts(Models, UserModelDecorator):
         results = Models.database.cursor.fetchall()
         results = results.copy()
 
-        memo = []
         shoppers = []
+        results = set(results)
         for result in results:
             id, = result
-            if id in memo: continue
             shopper = Users.get({"id": id})
             shoppers.append(shopper)
         return shoppers
@@ -285,11 +284,13 @@ class Carts(Models, UserModelDecorator):
         SQL = """
             UPDATE reservations SET is_in_cart = %s
                 WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
-        data = (False,
+        data = (
+            False,
             reservation.item_id,
             reservation.renter_id,
             reservation.date_started,
-            reservation.date_ended)
+            reservation.date_ended
+        )
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
 
@@ -313,11 +314,13 @@ class Carts(Models, UserModelDecorator):
         SQL = """
             UPDATE reservations SET is_in_cart = %s
                 WHERE item_id = %s AND renter_id = %s AND date_started = %s AND date_ended = %s;"""
-        data = (True,
+        data = (
+            True,
             reservation.item_id,
             reservation.renter_id,
             reservation.date_started,
-            reservation.date_ended)
+            reservation.date_ended
+        )
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
 

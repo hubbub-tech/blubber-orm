@@ -14,8 +14,6 @@ CREATE TABLE users (
  email text UNIQUE,
  password varchar(200),
  payment varchar(50),
- pubkey varchar(200),
- privkey varchar(200),
  dt_joined timestamp DEFAULT LOCALTIMESTAMP,
  dt_last_active timestamp DEFAULT LOCALTIMESTAMP,
  is_blocked boolean DEFAULT FALSE,

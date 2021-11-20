@@ -33,6 +33,7 @@ class Orders(Models, ReservationModelDecorator):
         self.is_dropoff_sched = db_data["is_dropoff_sched"]
         self.is_pickup_sched = db_data["is_pickup_sched"]
         self.lister_id = db_data["lister_id"]
+        self.is_cancelled = db_data["is_cancelled"]
         #reservation
         self.res_date_start = db_data["res_date_start"]
         self.res_date_end = db_data["res_date_end"]

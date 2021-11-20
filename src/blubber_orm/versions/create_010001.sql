@@ -16,8 +16,8 @@ CREATE TABLE users (
   email text UNIQUE,
   password varchar(200),
   payment varchar(50),
-  pubkey varchar(200),
-  privkey varchar(200),
+  pubkey varchar(200), -- ade 11/16
+  privkey varchar(200), -- ade 11/16
   dt_joined timestamp DEFAULT LOCALTIMESTAMP,
   dt_last_active timestamp DEFAULT LOCALTIMESTAMP,
   is_blocked boolean DEFAULT FALSE,
@@ -157,6 +157,7 @@ CREATE TABLE history (
   date_ended date,
   renter_id integer,
   item_id integer,
+  dt_created timestamp DEFAULT LOCALTIMESTAMP,
   PRIMARY KEY (date_started, date_ended, renter_id, item_id),
   FOREIGN KEY (renter_id) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
@@ -214,7 +215,7 @@ CREATE TABLE extensions (
 CREATE TABLE charges (
   id SERIAL,
   notes text
-  amount integer,
+  amount float,
   processor_id integer,
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
   order_id integer,

@@ -2,6 +2,7 @@ from ._conn import sql_to_dictionary
 from ._base import Models
 
 from blubber_orm.utils.structs import LinkedList
+from blubber_orm.utils import generate_conditions_input, generate_data_input
 
 class ReservationModelDecorator:
     """
@@ -49,6 +50,8 @@ class Reservations(Models):
     # reservation history linked list in development
     @property
     def history(self):
+        """A history of changes to the reservation primary keys."""
+
         if self._history is None and self.hist_item_id:
             self._history = LinkedList()
             hist_reservation = Reservations.get({
@@ -73,6 +76,60 @@ class Reservations(Models):
                     })
                 else: break
         return self._history
+
+    @classmethod
+    def swap(cls, hist_pkeys, new_pkeys):
+        assert isinstance(hist_pkeys, dict)
+        assert isinstance(new_pkeys, dict)
+
+        assert cls.verify_attributes(hist_pkeys)
+        assert cls.verify_attributes(new_pkeys)
+
+        hist_reservation = Reservations.get(hist_pkeys)
+        assert hist_reservation.is_calendared == True
+
+        new_reservation_dict = {
+            "date_started": new_pkeys["date_started"],
+            "date_ended": new_pkeys["date_ended"],
+            "renter_id": new_pkeys["renter_id"],
+            "item_id": new_pkeys["item_id"],
+            "is_calendared": new_pkeys["is_calendared"],
+            "is_extended": new_pkeys["is_extended"],
+            "is_in_cart": new_pkeys["is_in_cart"],
+            "charge": new_pkeys["charge"],
+            "deposit": new_pkeys["deposit"],
+            "tax": new_pkeys["tax"],
+            "dt_created": new_pkeys["dt_created"],
+            "is_valid": new_pkeys["is_valid"],
+            "hist_item_id": new_pkeys["item_id"],
+            "hist_renter_id": new_pkeys["renter_id"],
+            "hist_date_end": new_pkeys["date_ended"],
+            "hist_date_start": new_pkeys["date_started"]
+        }
+        Reservations.set(hist_pkeys, {"is_calendared": False}) # @warning: concurrency? maybe lock?
+        new_reservation = Reservations.insert(new_reservation_dict)
+
+        if hist_reservation.is_extended: table = "extensions"
+        else: table = "orders"
+
+        SQL = f"""
+            UPDATE {table}
+            SET item_id = %s, renter_id = %s, res_date_start = %s, res_date_end = %s
+            WHERE item_id = %s AND renter_id = %s AND res_date_start = %s AND res_date_end = %s
+        """
+        data = (
+            new_reservation.item_id,
+            new_reservation.renter_id,
+            new_reservation.date_started,
+            new_reservation.date_ended,
+            hist_reservation.item_id,
+            hist_reservation.renter_id,
+            hist_reservation.date_started,
+            hist_reservation.date_ended,
+        )
+
+        Models.database.cursor.execute(SQL, data)
+        Models.database.connection.commit()
 
     def print_total(self):
         """This is how much user must pay = charge + deposit + tax"""

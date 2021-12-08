@@ -1,5 +1,4 @@
 from .sort import blubber_sort
-from .structs import *
 
 def generate_conditions_input(required_keys: list, unverified_data: dict) -> str:
     conditions = []

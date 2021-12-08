@@ -1,8 +1,7 @@
 from ._conn import sql_to_dictionary
 from ._base import Models
 
-from blubber_orm.utils.structs import LinkedList
-from blubber_orm.utils import generate_conditions_input, generate_data_input
+from blubber_orm.wrappers import LinkedList
 
 class ReservationModelDecorator:
     """

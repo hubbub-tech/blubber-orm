@@ -36,7 +36,7 @@ class AbstractModels(ABC):
 
     @classmethod
     @abstractmethod
-    def insert(cls, attributes: dict) -> AbstractModels:
+    def insert(cls, attributes: dict):
         """
         Insert a new row of data into the table connected to the child model.
         This daata is accepted as a dictionary with the column name as dictionary
@@ -49,7 +49,7 @@ class AbstractModels(ABC):
 
     @classmethod
     @abstractmethod
-    def get(cls, pkeys: dict) -> AbstractModels:
+    def get(cls, pkeys: dict):
         """
         Get a row of data from the table connected to the child model by the
         primary key(s).

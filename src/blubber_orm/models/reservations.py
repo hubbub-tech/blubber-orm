@@ -41,10 +41,10 @@ class Reservations(Models):
         self.renter_id = db_data["renter_id"]
 
         # change history
-        self.hist_item_id = db_data["hist_item_id"]
-        self.hist_renter_id = db_data["hist_renter_id"]
-        self.hist_date_start = db_data["hist_date_start"]
-        self.hist_date_end = db_data["hist_date_end"]
+        self.hist_item_id = db_data.get("hist_item_id")
+        self.hist_renter_id = db_data.get("hist_renter_id")
+        self.hist_date_start = db_data.get("hist_date_start")
+        self.hist_date_end = db_data.get("hist_date_end")
 
     # reservation history linked list in development
     @property

@@ -1,13 +1,13 @@
 from datetime import date, datetime, time
 
 from blubber_orm.models._base import Models
-from blubber_orm.models import Users, Orders, Dropoffs, Pickups, Logistics
 
 class TaskWrapper:
 
     def __init__(self, task=None):
         # if isinstance(task, dict): pass # TODO: load a dictionary into TaskWrapper
-        if isinstance(task, Dropoffs):
+
+        if task.table_name == "dropoffs":
             self.type = "dropoff"
             self.task_date = task.dropoff_date
 
@@ -15,14 +15,14 @@ class TaskWrapper:
             self.address = task.logistics.address
 
 
-        elif isinstance(task, Pickups):
+        elif task.table_name == "pickups":
             self.type = "pickup"
             self.task_date = task.pickup_date
 
             self.logistics = task.logistics
             self.address = task.logistics.address
 
-        elif isinstance(task, Logistics):
+        elif task.table_name == "logistics":
             self.type = "logistics"
             self.task_date = None
 
@@ -37,8 +37,7 @@ class TaskWrapper:
         self._is_completed = None
 
 
-    @property
-    def orders(self):
+    def get_order_ids(self):
         if  self.type == "dropoff":
             SQL = "SELECT order_id FROM order_dropoffs WHERE dropoff_date = %s AND dt_sched = %s AND renter_id = %s;"
         elif self.type == "pickup":
@@ -51,19 +50,14 @@ class TaskWrapper:
         results = Models.database.cursor.fetchall()
         ids = results.copy()
 
-        orders = []
-        for order_id in ids:
-            order = Orders.get({"id": order_id})
-            orders.append(order)
-
-        return orders
+        return ids
 
     @property
     def is_completed(self):
-        if self.type == "dropoff"
+        if self.type == "dropoff":
             for order in self.orders:
                 if order.dt_dropoff_completed == None: return False
-        elif self.type == "pickup"
+        elif self.type == "pickup":
             for order in self.orders:
                 if order.dt_pickup_completed == None: return False
         else: raise Exception(f"Sorry, there is an issue with the type: {self.type}")

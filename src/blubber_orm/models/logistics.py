@@ -21,9 +21,8 @@ class Logistics(Models, AddressModelDecorator):
         self.renter_id = db_data["renter_id"]
         self.courier_id = db_data["courier_id"]
         #address
-        self.address_num = db_data["address_num"]
-        self.address_street = db_data["address_street"]
-        self.address_apt = db_data["address_apt"]
+        self.address_line_1 = db_data["address_line_1"]
+        self.address_line_2 = db_data["address_line_2"]
         self.address_zip = db_data["address_zip"]
 
     @property

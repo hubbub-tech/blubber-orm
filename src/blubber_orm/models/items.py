@@ -37,9 +37,8 @@ class Items(Models, AddressModelDecorator):
         self.last_locked = db_data["last_locked"]
         self.lister_id = db_data["lister_id"]
         #address
-        self.address_num = db_data["address_num"]
-        self.address_street = db_data["address_street"]
-        self.address_apt = db_data["address_apt"]
+        self.address_line_1 = db_data["address_line_1"]
+        self.address_line_2 = db_data["address_line_2"]
         self.address_zip = db_data["address_zip"]
 
     @property
@@ -54,11 +53,10 @@ class Items(Models, AddressModelDecorator):
     def by_address(cls, address):
         SQL = """
             SELECT * FROM items
-                WHERE address_num = %s
-                AND address_street = %s
-                AND address_apt = %s
+                WHERE address_line_1 = %s
+                AND address_line_2 = %s
                 AND address_zip = %s;"""
-        data = (address.num, address.street, address.apt, address.zip)
+        data = (address.line_1, address.line_2, address.zip)
         Models.database.cursor.execute(SQL, data)
         results = Models.database.cursor.fetchall()
 

@@ -31,9 +31,8 @@ class Users(Models, AddressModelDecorator):
         self.is_blocked = db_data["is_blocked"]
         self.session = db_data["session"]
         #address
-        self.address_num = db_data["address_num"]
-        self.address_street = db_data["address_street"]
-        self.address_apt = db_data["address_apt"]
+        self.address_line_1 = db_data["address_line_1"]
+        self.address_line_2 = db_data["address_line_2"]
         self.address_zip = db_data["address_zip"]
 
     @property
@@ -83,9 +82,8 @@ class Users(Models, AddressModelDecorator):
     def by_address(cls, address):
         SQL = """
             SELECT * FROM users
-                WHERE address_num = %s
-                AND address_street = %s
-                AND address_apt = %s
+                WHERE address_line_1 = %s
+                AND address_line_2 = %s
                 AND address_zip = %s;"""
         data = (address.num, address.street, address.apt, address.zip)
         Models.database.cursor.execute(SQL, data)

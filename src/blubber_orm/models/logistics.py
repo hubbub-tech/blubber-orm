@@ -20,6 +20,7 @@ class Logistics(Models, AddressModelDecorator):
         self.chosen_time = db_data["chosen_time"]
         self.renter_id = db_data["renter_id"]
         self.courier_id = db_data["courier_id"]
+
         #address
         self.address_line_1 = db_data["address_line_1"]
         self.address_line_2 = db_data["address_line_2"]

@@ -18,6 +18,7 @@ class AddressModelDecorator:
         }
         return Addresses.get(address_keys)
 
+
 class Addresses(Models):
     table_name = "addresses"
     table_primaries = ["line_1", "line_2", "zip"]

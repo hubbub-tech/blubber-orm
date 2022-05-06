@@ -25,12 +25,17 @@ class Users(Models, AddressModelDecorator):
         self._name = db_data["name"]
         self.email = db_data["email"]
         self.password = db_data["password"] #already hashed
-        self.payment = db_data["payment"]
         self.dt_joined = db_data["dt_joined"]
         self.dt_last_active = db_data["dt_last_active"]
         self.is_blocked = db_data["is_blocked"]
         self.session = db_data["session"]
-        #address
+
+        # payment
+        self.payment = db_data["payment"]
+        self.privkey = db_data.get("privkey")
+        self.pubkey = db_data.get("pubkey")
+
+        # address
         self.address_line_1 = db_data["address_line_1"]
         self.address_line_2 = db_data["address_line_2"]
         self.address_zip = db_data["address_zip"]
@@ -85,7 +90,7 @@ class Users(Models, AddressModelDecorator):
                 WHERE address_line_1 = %s
                 AND address_line_2 = %s
                 AND address_zip = %s;"""
-        data = (address.num, address.street, address.apt, address.zip)
+        data = (address.line_1, address.line_2, address.zip)
         Models.database.cursor.execute(SQL, data)
         results = Models.database.cursor.fetchall()
 
@@ -111,11 +116,49 @@ class Users(Models, AddressModelDecorator):
         return users
 
     @property
-    def is_courier(self):
-        SQL = "SELECT * FROM couriers WHERE courier_id = %s;" # Note: no quotes
+    def roles(self):
+        roles = []
+
+        data = (self.id, )
+        couriers_query = "SELECT * FROM couriers WHERE courier_id = %s;"
+
+        renters_query = "SELECT * FROM renters WHERE renter_id = %s;"
+        listers_query = "SELECT * FROM listers WHERE lister_id = %s;"
+
+        payers_query = "SELECT * FROM payers WHERE payer_id = %s;"
+        payees_query = "SELECT * FROM payees WHERE payee_id = %s;"
+
+        Models.database.cursor.execute(couriers_query, data)
+        if Models.database.cursor.fetchone(): roles.append("couriers")
+
+        Models.database.cursor.execute(renters_query, data)
+        if Models.database.cursor.fetchone(): roles.append("renters")
+
+        Models.database.cursor.execute(listers_query, data)
+        if Models.database.cursor.fetchone(): roles.append("listers")
+
+        Models.database.cursor.execute(payers_query, data)
+        if Models.database.cursor.fetchone(): roles.append("payers")
+
+        Models.database.cursor.execute(payees_query, data)
+        if Models.database.cursor.fetchone(): roles.append("payees")
+
+        return roles
+
+
+    def set_role(role):
+        valid_roles = ["payees", "payers", "couriers", "renters", "listers"]
+
+        assert role in valid_roles, "Please provide one of the valid roles: 'payees', 'payers', 'couriers', 'renters', 'listers'."
+
+        if role in self.roles: return
+
+        role_id = role[:-1] + "_id" # formatting the field name according to role
+        SQL = f"INSERT INTO {role} ({role_id}) VALUES (%s);"
+
         data = (self.id, )
         Models.database.cursor.execute(SQL, data)
-        return Models.database.cursor.fetchone() is not None
+        Models.database.connection.commit()
 
     def make_courier(self):
         if self.is_courier == False:
@@ -124,61 +167,7 @@ class Users(Models, AddressModelDecorator):
             Models.database.cursor.execute(SQL, data)
             Models.database.connection.commit()
 
-    @property
-    def is_renter(self):
-        SQL = "SELECT * FROM renters WHERE renter_id = %s;" # Note: no quotes
-        data = (self.id, )
-        Models.database.cursor.execute(SQL, data)
-        return Models.database.cursor.fetchone() is not None
 
-    def make_renter(self):
-        if self.is_renter == False:
-            SQL = "INSERT INTO renters (renter_id) VALUES (%s);" # Note: no quotes
-            data = (self.id, )
-            Models.database.cursor.execute(SQL, data)
-            Models.database.connection.commit()
-
-    @property
-    def is_lister(self):
-        SQL = "SELECT * FROM listers WHERE lister_id = %s;" # Note: no quotes
-        data = (self.id, )
-        Models.database.cursor.execute(SQL, data)
-        return Models.database.cursor.fetchone() is not None
-
-    def make_lister(self):
-        if self.is_lister == False:
-            SQL = "INSERT INTO listers (lister_id) VALUES (%s);" # Note: no quotes
-            data = (self.id, )
-            Models.database.cursor.execute(SQL, data)
-            Models.database.connection.commit()
-
-    @property
-    def is_payer(self):
-        SQL = "SELECT * FROM payers WHERE payer_id = %s;" # Note: no quotes
-        data = (self.id, )
-        Models.database.cursor.execute(SQL, data)
-        return Models.database.cursor.fetchone() is not None
-
-    def make_payer(self):
-        if self.is_payer == False:
-            SQL = "INSERT INTO payers (payer_id) VALUES (%s);" # Note: no quotes
-            data = (self.id, )
-            Models.database.cursor.execute(SQL, data)
-            Models.database.connection.commit()
-
-    @property
-    def is_payee(self):
-        SQL = "SELECT * FROM payee WHERE payer_id = %s;" # Note: no quotes
-        data = (self.id, )
-        Models.database.cursor.execute(SQL, data)
-        return Models.database.cursor.fetchone() is not None
-
-    def make_payee(self):
-        if self.is_payee == False:
-            SQL = "INSERT INTO payee (payee_id) VALUES (%s);" # Note: no quotes
-            data = (self.id, )
-            Models.database.cursor.execute(SQL, data)
-            Models.database.connection.commit()
 
 class Couriers(Models, UserModelDecorator):
     table_name = "couriers"

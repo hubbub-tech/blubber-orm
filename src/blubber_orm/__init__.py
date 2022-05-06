@@ -20,8 +20,6 @@ from .models import Reviews
 from .models import Testimonials
 from .models import Issues
 
-from .ops import *
-
 #WARNING: these functions will edit whichever DB is linked in the environment...
 
 def get_db():

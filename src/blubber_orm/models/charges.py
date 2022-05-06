@@ -12,6 +12,7 @@ class Charges(Models, OrderModelDecorator):
         self.notes = db_data["notes"]
         self.amount = db_data["amount"]
         self.processor_id = db_data["processor_id"]
+        self.processor_type = ddb_data["processor_type"]
         self.dt_created = db_data["dt_created"]
 
         self.order_id = db_data["order_id"]

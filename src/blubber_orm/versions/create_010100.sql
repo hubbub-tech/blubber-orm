@@ -214,6 +214,7 @@ CREATE TABLE charges (
   notes text
   amount float,
   processor_id varchar(100),
+  processor_type varchar(100),
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
   order_id varchar(100),
   payee_id varchar(100),
@@ -276,10 +277,12 @@ CREATE TABLE order_pickups (
   order_id varchar(100),
   pickup_date date,
   renter_id varchar(100),
+  courier_id varchar(100),
   dt_sched timestamp,
   dt_completed timestamp,
   PRIMARY KEY (order_id),
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
+  FOREIGN KEY (courier_id) REFERENCES couriers (courier_id) ON DELETE CASCADE,
   FOREIGN KEY (pickup_date, dt_sched, renter_id) REFERENCES pickups (pickup_date, dt_sched, renter_id) ON DELETE CASCADE
 );
 
@@ -287,10 +290,12 @@ CREATE TABLE order_dropoffs (
   order_id varchar(100),
   dropoff_date date,
   renter_id varchar(100),
+  courier_id varchar(100),
   dt_sched timestamp,
   dt_completed timestamp,
   PRIMARY KEY (order_id),
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
+  FOREIGN KEY (courier_id) REFERENCES couriers (courier_id) ON DELETE CASCADE,
   FOREIGN KEY (dropoff_date, dt_sched, renter_id) REFERENCES dropoffs (dropoff_date, dt_sched, renter_id) ON DELETE CASCADE
 );
 

@@ -36,7 +36,7 @@ Create a play-version of the Hubbub database and fill it with dummy data under /
 
 ## Built With
 
-* [psycopg2](https://www.psycopg.org/docs/) - The engine for running posgresql queries
+* [psycopg2](https://www.psycopg.org/docs/) - The DBAPI for running posgresql queries
 
 ## Contributing
 

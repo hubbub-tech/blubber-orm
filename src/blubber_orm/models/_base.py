@@ -1,10 +1,16 @@
 import json
-import psycopg2
+import logging
+
+from psycopg2 import InternalError, IntegrityError
 from datetime import datetime, date, time
 from abc import ABC, abstractmethod
-from ._conn import DatabaseConnection, sql_to_dictionary
 
-from blubber_orm.utils import generate_conditions_input, generate_data_input
+from ._conn import DatabaseConnection, format_to_dict
+
+from blubber_orm.utils import format_query_statement, format_query_data
+
+logger = logging.getLogger('name.of.library')
+logger.addHandler(logging.NullHandler())
 
 class AbstractModels(ABC):
     """
@@ -98,111 +104,110 @@ class Models(AbstractModels):
 
     @classmethod
     def insert(cls, attributes):
-        is_debugging = Models.database._debug
+        debug_mode = Models.database._debug
 
-        keys = ", ".join(attributes.keys())
+        cols = ", ".join(attributes.keys())
         values = ", ".join(["%s"] * len(attributes))
         pkey = ", ".join(cls.table_primaries)
 
-        SQL = f"INSERT INTO {cls.table_name} ({keys}) VALUES ({values}) RETURNING {pkey};"
+        SQL = f"INSERT INTO {cls.table_name} ({cols}) VALUES ({values}) RETURNING {pkey};"
         data = tuple(attributes.values())
 
-        # @notice: skips incrementer to next available pkey if current pkey is occupied
-        if cls.table_name in ["users", "items", "orders", "reviews", "issues"]:
-            while True:
-                try:
-                    Models.database.cursor.execute(SQL, data)
-                    if is_debugging: print("Attempting: ", SQL, data)
-                    break
-                except psycopg2.errors.InFailedSqlTransaction as e:
-                    Models.database.connection.rollback()
-                    continue
-                except psycopg2.errors.UniqueViolation as e:
-                    print(e)
-                    continue
-                except Exception as e:
-                    print(e)
-        else:
+        try:
             Models.database.cursor.execute(SQL, data)
+        except IntegrityError.UniqueViolation as e:
+            logger.error(e, exc_info=True)
+            Models.database.connection.rollback()
+            return None
+
+        logger.debug(f"Query:\n\t{SQL}")
+
         Models.database.connection.commit()
         result = Models.database.cursor.fetchone()
 
-        if is_debugging: print("SQL command: ", SQL)
-        pkey_returned = sql_to_dictionary(Models.database.cursor, result)
+        logger.debug(f"Result:\n\t{result}")
 
-        _instance = cls.get(pkey_returned)
+        pkey = format_to_dict(Models.database.cursor, result)
+
+        _instance = cls.get(pkey)
         return _instance
+
 
     @classmethod
     def get(cls, pkeys):
         assert isinstance(pkeys, dict)
-        is_debugging = Models.database._debug
 
-        conds = generate_conditions_input(cls.table_primaries, pkeys)
-        data = generate_data_input(cls.table_primaries, pkeys)
+        data = format_query_data(cls.table_primaries, pkeys)
+        conds = format_query_statement(cls.table_primaries, pkeys)
 
         SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
+
+        logger.debug(f"Query:\n\t{SQL}")
 
         Models.database.cursor.execute(SQL, data)
         result = Models.database.cursor.fetchone()
 
-        if is_debugging: print("SQL command: ", SQL)
+        logger.debug(f"Result:\n\t{result}")
+
         if result is None: return None
 
-        _instance_dict = sql_to_dictionary(Models.database.cursor, result)
+        _instance_dict = format_to_dict(Models.database.cursor, result)
         _instance = cls(_instance_dict)
         return _instance
+
 
     @classmethod
     def set(cls, pkeys, changes):
         assert isinstance(pkeys, dict)
-        is_debugging = Models.database._debug
 
         set_data = tuple(changes.values())
-        set_conds = ", ".join([f"{key} = %s" for key in changes.keys()])
+        set_conds = ", ".join([f"{col} = %s" for col in changes.keys()])
 
-        where_data = generate_data_input(cls.table_primaries, pkeys)
-        where_conds = generate_conditions_input(cls.table_primaries, pkeys)
+        where_data = format_query_data(cls.table_primaries, pkeys)
+        where_conds = format_query_statement(cls.table_primaries, pkeys)
 
         SQL = f"UPDATE {cls.table_name} SET {set_conds} WHERE {where_conds};"
         data = set_data + where_data
 
+        logger.debug(f"Query:\n\t{SQL}")
+
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
 
-        if is_debugging: print("SQL command: ", SQL)
 
     @classmethod
     def delete(cls, pkeys):
         is_debugging = Models.database._debug
 
-        conds = generate_conditions_input(cls.table_primaries, pkeys)
-        data = generate_data_input(cls.table_primaries, pkeys)
+        data = format_query_data(cls.table_primaries, pkeys)
+        conds = format_query_statement(cls.table_primaries, pkeys)
 
         SQL = f"DELETE FROM {cls.table_name} WHERE {conds};" # Note: no quotes
+
+        logger.debug(f"Query:\n\t{SQL}")
 
         Models.database.cursor.execute(SQL, data)
         Models.database.connection.commit()
 
-        if is_debugging: print("SQL command: ", SQL, data)
 
     @classmethod
     def get_all(cls):
-        is_debugging = Models.database._debug
-
         SQL = f"SELECT * FROM {cls.table_name};"
+
+        logger.debug(f"Query:\n\t{SQL}")
 
         Models.database.cursor.execute(SQL)
         results = Models.database.cursor.fetchall()
 
-        if is_debugging: print("SQL command: ", SQL)
+        logger.debug(f"Result:\n\t{results}")
 
         _instances = []
         for result in results:
-            _instance_dict = sql_to_dictionary(Models.database.cursor, result)
+            _instance_dict = format_to_dict(Models.database.cursor, result)
             _instance = cls(_instance_dict)
             _instances.append(_instance)
         return _instances
+
 
     @classmethod
     def filter(cls, filters):
@@ -210,20 +215,22 @@ class Models(AbstractModels):
 
         assert isinstance(filters, dict)
         assert cls.verify_attributes(filter_keys)
-        is_debugging = Models.database._debug
 
         data = tuple(filters.values())
         conds = " AND ".join([f"{key} = %s" for key in filters.keys()])
 
         SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
+
+        logger.debug(f"Query:\n\t{SQL}")
+
         Models.database.cursor.execute(SQL, data)
         results = Models.database.cursor.fetchall()
 
-        if is_debugging: print("SQL command: ", SQL)
+        logger.debug(f"Result:\n\t{results}")
 
         _instances = []
         for result in results:
-            _instance_dict = sql_to_dictionary(Models.database.cursor, result)
+            _instance_dict = format_to_dict(Models.database.cursor, result)
             _instance = cls(_instance_dict)
             _instances.append(_instance)
         return _instances
@@ -235,42 +242,50 @@ class Models(AbstractModels):
 
         assert isinstance(filters, dict)
         assert cls.verify_attributes(filter_keys)
-        is_debugging = Models.database._debug
 
         data = tuple(filters.values())
         conds = " AND ".join([f"{key} = %s" for key in filters.keys()])
+
         SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
+
+
+
         Models.database.cursor.execute(SQL, data)
         result = Models.database.cursor.fetchall()
 
-        if is_debugging: print("SQL command: ", SQL)
+        logger.debug(f"Result:\n\t{result}")
+
         if len(result) == 0: return None
 
         assert len(result) == 1, "The set of filters applied are not unique to one row."
 
         result, = result
-        _instance_dict = sql_to_dictionary(Models.database.cursor, result)
+        _instance_dict = format_to_dict(Models.database.cursor, result)
         _instance = cls(_instance_dict)
         return _instance
+
 
     @classmethod
     def like(cls, condition, value):
         assert cls.verify_attributes([condition])
-        is_debugging = Models.database._debug
 
         SQL = f"SELECT * FROM {cls.table_name} WHERE {condition} ILIKE %s;"
         data = (value,)
+
+        logger.debug(f"Query:\n\t{SQL}")
+
         Models.database.cursor.execute(SQL, data)
         results = Models.database.cursor.fetchall()
 
-        if is_debugging: print("SQL command: ", SQL)
+        logger.debug(f"Result:\n\t{results}")
 
         _instances = []
         for result in results:
-            _instance_dict = sql_to_dictionary(Models.database.cursor, result)
+            _instance_dict = format_to_dict(Models.database.cursor, result)
             _instance = cls(_instance_dict)
             _instances.append(_instance)
         return _instances
+
 
     @classmethod
     def verify_attributes(cls, query_attributes: list) -> bool:
@@ -278,12 +293,12 @@ class Models(AbstractModels):
         A controlled check to see if the list of query_attributes (input), is
         actually a subset of the columns defined in the table.
 
-        If not, then return False and print the name of the first entry to fail
+        If not, then returns False and prints the name of the first entry to fail
         the check.
         """
-        is_debugging = Models.database._debug
         _query_attributes = query_attributes.copy()
         _attribute = _query_attributes.pop(0)
+
         attribute = set([_attribute])
         table_attributes = cls._get_attributes()
         if attribute.issubset(table_attributes):
@@ -292,17 +307,17 @@ class Models(AbstractModels):
 
         raise Excetion(f"NotTableAttributeError, {_attribute} is not an attribute of {cls.table_name}.")
 
+
     @classmethod
     def _get_attributes(cls):
-        is_debugging = Models.database._debug
-
         if cls.table_attributes is None:
             SQL = f"SELECT * FROM {cls.table_name} LIMIT 0"
             Models.database.cursor.execute(SQL)
             cls.table_attributes = [attr.name for attr in Models.database.cursor.description]
 
-            if is_debugging: print("Table aattributes are initialized as: ", cls.table_attributes)
+            logger.debug(f"Table attributes are initialized as: {cls.table_attributes}")
         return cls.table_attributes
+
 
     @classmethod
     def does_row_exist(cls, attributes):
@@ -310,16 +325,17 @@ class Models(AbstractModels):
 
         assert isinstance(attributes, dict)
         assert cls.verify_attributes(attr_keys)
-        is_debugging = Models.database._debug
 
-        conds = generate_conditions_input(attributes.keys(), attributes)
         data = tuple(attributes.values())
+        conds = format_query_statement(attributes.keys(), attributes)
 
         SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
-        Models.database.cursor.execute(SQL, data)
 
-        if is_debugging: print("SQL command: ", SQL)
+        logger.debug(f"Query:\n\t{SQL}")
+
+        Models.database.cursor.execute(SQL, data)
         return Models.database.cursor.fetchone() is not None
+
 
     def to_dict(self, serializable=True):
         _self_dict = self.__dict__
@@ -339,5 +355,6 @@ class Models(AbstractModels):
             _self_dict = _serializable_dict
         return _self_dict
 
-    def __repr__(self): return f"<Blubber object: {self.table_name}>"
-    def __eq__(self, other) : return self.__dict__ == other.__dict__
+
+    def __repr__(self): return f"<Blubber Table: {self.table_name}>"
+    def __eq__(self, other): return self.__dict__ == other.__dict__

@@ -14,6 +14,3 @@ def blubber_sort(instances, attr, reverse=False):
         assert isinstance(_instance, ModelsClass)
     _instances.sort(key = lambda model: model.__dict__[attr], reverse=reverse)
     return _instances
-
-
-def sort_tags_by_usage(tags, reverse=False): return tags

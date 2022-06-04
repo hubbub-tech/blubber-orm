@@ -1,7 +1,1 @@
-from .addresses import Addresses
-from .items import Items, Details, Calendars
-from .logistics import Pickups, Dropoffs, Logistics
-from .orders import Orders, Extensions
-from .reservations import Reservations
-from .texts import Tags, Testimonials, Reviews, Issues
-from .users import Users, Profiles, Carts
+from ._base import Models

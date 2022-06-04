@@ -1,16 +1,14 @@
 import os
-import psycopg2 #source docs: https://www.psycopg.org/docs/usage.html
+from psycopg2 import connect
 from uritools import urisplit
 
-#postgres app commands: https://kb.objectrocket.com/postgresql/how-to-run-an-sql-file-in-postgres-846
-#postgres app website: https://postgresapp.com/documentation/cli-tools.html
-TEST_URI = "postgresql://adekunlebalogun:none@localhost:5432/adekunlebalogun"
 
-def sql_to_dictionary(cursor, result):
+def format_to_dict(cursor, result):
     to_dictionary = {}
     for index, attr in enumerate(cursor.description):
         to_dictionary[attr.name] = result[index]
     return to_dictionary
+
 
 def parse_uri(database_uri):
     not_postgres_error = "This URI is not for a PostgreSQL database."
@@ -25,6 +23,7 @@ def parse_uri(database_uri):
         "port": uri_credentials.port
     }
     return parsed_credentials
+
 
 #simple singleton design pattern
 class DatabaseConnection:
@@ -71,15 +70,14 @@ class DatabaseConnection:
         cur = None
         try:
             #build exception for when URI cannot be found in environment
-            database_uri = os.environ.get("DATABASE_URL", TEST_URI)
+            database_uri = os.environ.get("DATABASE_URL", "Connection Failed.")
             credentials = parse_uri(database_uri)
         except AssertionError as not_postgres_error:
-            #TODO: log error to file with traceback
             print(not_postgres_error)
         else:
             # establish connection
             try:
-                conn = psycopg2.connect(
+                conn = connect(
                     dbname=credentials["dbname"],
                     user=credentials["user"],
                     password=credentials["password"],

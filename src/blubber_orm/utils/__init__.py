@@ -1,19 +1,20 @@
 from .sort import blubber_sort
+from .wrappers import LinkedList
 
-def generate_conditions_input(required_keys: list, unverified_data: dict) -> str:
-    conditions = []
-    for key in required_keys:
-        assert unverified_data.get(key) is not None, "Query not specific enough for Models.get()."
-        conditions.append(f"{key} = %s")
+def format_query_statement(required_keys: list, unverified_data: dict) -> str:
+    statement = []
+    for rkey in required_keys:
+        assert unverified_data.get(rkey) is not None, "Query not specific enough for Models.get()."
+        statement.append(f"{rkey} = %s")
 
-    conditions = " AND ".join(conditions) # transform from list to string
-    return conditions
+    statement = " AND ".join(statement)
+    return statement
 
-def generate_data_input(required_keys: list, unverified_data: dict) -> tuple:
+def format_query_data(required_keys: list, unverified_data: dict) -> tuple:
     data = []
-    for key in required_keys:
-        assert unverified_data.get(key) is not None, "Query not specific enough for Models.get()."
-        data.append(unverified_data[key])
+    for rkey in required_keys:
+        assert unverified_data.get(rkey) is not None, "Query not specific enough for Models.get()."
+        data.append(unverified_data[rkey])
 
-    data = tuple(data) # transform from list to tuple
+    data = tuple(data)
     return data

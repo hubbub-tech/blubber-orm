@@ -57,7 +57,7 @@ CREATE TABLE items (
   dim_length float,
   dim_width float,
   dim_unit varchar(4),
-  lister_id integer,
+  lister_id varchar(100),
   address_line_1 varchar(100),
   address_line_2 varchar(100),
   address_city varchar(100),
@@ -142,9 +142,13 @@ CREATE TABLE res_history (
   dt_ended timestamp,
   renter_id varchar(100),
   item_id varchar(100),
+  next_dt_start timestamp,
+  next_dt_end timestamp,
+  next_renter_id varchar(100),
+  next_item_id varchar(100),
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
   PRIMARY KEY (dt_started, dt_ended, renter_id, item_id),
-  FOREIGN KEY (res_dt_start, res_dt_end, res_renter_id, res_item_id) REFERENCES reservations (dt_started, dt_ended, renter_id, item_id)
+  FOREIGN KEY (dt_started, dt_ended, renter_id, item_id) REFERENCES reservations (dt_started, dt_ended, renter_id, item_id) ON DELETE CASCADE
 );
 
 
@@ -234,7 +238,7 @@ CREATE TABLE logistics (
 CREATE TABLE pickups (
   date_sched date CHECK (date_sched > dt_created),
   dt_created timestamp,
-  renter_id integer,
+  renter_id varchar(100),
   PRIMARY KEY (date_sched, dt_created, renter_id),
   FOREIGN KEY (dt_created, renter_id) REFERENCES logistics (dt_created, renter_id) ON DELETE CASCADE
 );
@@ -242,7 +246,7 @@ CREATE TABLE pickups (
 CREATE TABLE dropoffs (
   date_sched date CHECK (date_sched > dt_created),
   dt_created timestamp,
-  renter_id integer,
+  renter_id varchar(100),
   PRIMARY KEY (date_sched, dt_created, renter_id),
   FOREIGN KEY (dt_created, renter_id) REFERENCES logistics (dt_created, renter_id) ON DELETE CASCADE
 );
@@ -255,7 +259,7 @@ CREATE TABLE tags (
 CREATE TABLE item_tags (
  item_id varchar(100),
  title varchar(75),
- PRIMARY KEY (item_id, tag_name),
+ PRIMARY KEY (item_id, title),
  FOREIGN KEY (title) REFERENCES tags (title) ON DELETE CASCADE,
  FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
 );
@@ -263,7 +267,7 @@ CREATE TABLE item_tags (
 CREATE TABLE order_pickups (
  order_id varchar(100),
  date_sched date,
- renter_id integer,
+ renter_id varchar(100),
  dt_sched timestamp,
  dt_completed timestamp,
  PRIMARY KEY (order_id),
@@ -274,7 +278,7 @@ CREATE TABLE order_pickups (
 CREATE TABLE order_dropoffs (
  order_id varchar(100),
  date_sched date,
- renter_id integer,
+ renter_id varchar(100),
  dt_sched timestamp,
  dt_completed timestamp,
  PRIMARY KEY (order_id),
@@ -293,3 +297,25 @@ CREATE TABLE issues (
  PRIMARY KEY (id),
  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+CREATE TABLE promos (
+  title varchar(100),
+  description text,
+  sku integer,
+  discount_value float,
+  discount_unit varchar(50),
+  discount_type varchar(50),
+  dt_activated timestamp,
+  dt_expired timestamp,
+  is_active boolean,
+  PRIMARY KEY (title)
+)
+
+CREATE TABLE order_promos (
+  order_id varchar(100),
+  promo_title varchar(100),
+  dt_applied timestamp DEFAULT LOCALTIMESTAMP,
+  PRIMARY KEY (order_id, promo_title),
+  FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
+  FOREIGN KEY (promo_title) REFERENCES promos (title) ON DELETE CASCADE
+)

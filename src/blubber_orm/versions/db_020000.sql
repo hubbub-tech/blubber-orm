@@ -5,6 +5,8 @@ CREATE TABLE addresses (
   state varchar(100),
   country varchar(100),
   zip varchar(11),
+  lat float,
+  lng float,
   PRIMARY KEY (line_1, line_2, country, zip)
 );
 
@@ -49,7 +51,6 @@ CREATE TABLE items (
   is_featured boolean DEFAULT FALSE,
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
   is_locked boolean DEFAULT FALSE,
-  locker_id varchar(100),
   description text,
   weight float,
   weight_unit varchar(4),
@@ -57,7 +58,9 @@ CREATE TABLE items (
   dim_length float,
   dim_width float,
   dim_unit varchar(4),
+  locker_id varchar(100),
   lister_id varchar(100),
+  manufacturer_id varchar(100),
   address_line_1 varchar(100),
   address_line_2 varchar(100),
   address_city varchar(100),
@@ -65,7 +68,15 @@ CREATE TABLE items (
   address_zip varchar(11),
   PRIMARY KEY (id),
   FOREIGN KEY (address_line_1, address_line_2, address_country, address_zip) REFERENCES addresses (line_1, line_2, country, zip),
-  FOREIGN KEY (lister_id) REFERENCES users (id)
+  FOREIGN KEY (lister_id) REFERENCES listers (lister_id),
+  FOREIGN KEY (locker_id) REFERENCES renters (renter_id),
+  FOREIGN KEY (manufacturer_id) REFERENCES manufacturers (id)
+);
+
+CREATE TABLE manufacturers (
+  id varchar(100),
+  brand varchar(100),
+  PRIMARY KEY (id)
 );
 
 CREATE TABLE calendars (

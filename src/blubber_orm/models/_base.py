@@ -110,24 +110,33 @@ class Models(AbstractModels):
         values = ", ".join(["%s"] * len(attributes))
         pkey = ", ".join(cls.table_primaries)
 
-        SQL = f"INSERT INTO {cls.table_name} ({cols}) VALUES ({values}) RETURNING {pkey};"
+        SQL = f"""
+            INSERT
+            INTO {cls.table_name} ({cols})
+            VALUES ({values})
+            RETURNING {pkey};
+            """
+
         data = tuple(attributes.values())
 
-        try:
-            Models.database.cursor.execute(SQL, data)
-        except IntegrityError.UniqueViolation as e:
-            logger.error(e, exc_info=True)
-            Models.database.connection.rollback()
-            return None
+        with Models.database.connection.cursor() as cursor:
 
-        logger.debug(f"Query:\n\t{SQL}")
+            try:
+                cursor.execute(SQL, data)
 
-        Models.database.connection.commit()
-        result = Models.database.cursor.fetchone()
+            except IntegrityError.UniqueViolation as e:
+                logger.error(e, exc_info=True)
+                Models.database.connection.rollback()
+                return None
 
-        logger.debug(f"Result:\n\t{result}")
+            logger.debug(f"Query:\n\t{SQL}")
 
-        pkey = format_to_dict(Models.database.cursor, result)
+            Models.database.connection.commit()
+            result = cursor.fetchone()
+
+            logger.debug(f"Result:\n\t{result}")
+
+            pkey = format_to_dict(cursor, result)
 
         _instance = cls.get(pkey)
         return _instance
@@ -140,18 +149,24 @@ class Models(AbstractModels):
         data = format_query_data(cls.table_primaries, pkeys)
         conds = format_query_statement(cls.table_primaries, pkeys)
 
-        SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
+        SQL = f"""
+            SELECT *
+            FROM {cls.table_name}
+            WHERE {conds};
+            """
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchone()
+        with Models.database.connection.cursor() as cursor:
+            cursor.execute(SQL, data)
+            result = cursor.fetchone()
 
-        logger.debug(f"Result:\n\t{result}")
+            logger.debug(f"Result:\n\t{result}")
 
-        if result is None: return None
+            if result is None: return None
 
-        _instance_dict = format_to_dict(Models.database.cursor, result)
+            _instance_dict = format_to_dict(cursor, result)
+
         _instance = cls(_instance_dict)
         return _instance
 
@@ -166,13 +181,20 @@ class Models(AbstractModels):
         where_data = format_query_data(cls.table_primaries, pkeys)
         where_conds = format_query_statement(cls.table_primaries, pkeys)
 
-        SQL = f"UPDATE {cls.table_name} SET {set_conds} WHERE {where_conds};"
+        SQL = f"""
+            UPDATE {cls.table_name}
+            SET {set_conds}
+            WHERE {where_conds};
+            """
+
         data = set_data + where_data
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
+        with Models.database.connection.cursor() as cursor:
+            cursor.execute(SQL, data)
+
+            Models.database.connection.commit()
 
 
     @classmethod
@@ -182,30 +204,40 @@ class Models(AbstractModels):
         data = format_query_data(cls.table_primaries, pkeys)
         conds = format_query_statement(cls.table_primaries, pkeys)
 
-        SQL = f"DELETE FROM {cls.table_name} WHERE {conds};" # Note: no quotes
+        SQL = f"""
+            DELETE
+            FROM {cls.table_name}
+            WHERE {conds};
+            """
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        Models.database.cursor.execute(SQL, data)
-        Models.database.connection.commit()
+        with Models.database.connection.cursor() as cursor:
+            cursor.execute(SQL, data)
+
+            Models.database.connection.commit()
 
 
     @classmethod
     def get_all(cls):
-        SQL = f"SELECT * FROM {cls.table_name};"
+        SQL = f"""
+            SELECT *
+            FROM {cls.table_name};
+            """
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        Models.database.cursor.execute(SQL)
-        results = Models.database.cursor.fetchall()
+        with Models.database.connection.cursor() as cursor:
+            cursor.execute(SQL)
+            results = cursor.fetchall()
 
-        logger.debug(f"Result:\n\t{results}")
+            logger.debug(f"Result:\n\t{results}")
 
-        _instances = []
-        for result in results:
-            _instance_dict = format_to_dict(Models.database.cursor, result)
-            _instance = cls(_instance_dict)
-            _instances.append(_instance)
+            _instances = []
+            for result in results:
+                _instance_dict = format_to_dict(cursor, result)
+                _instance = cls(_instance_dict)
+                _instances.append(_instance)
         return _instances
 
 
@@ -219,20 +251,25 @@ class Models(AbstractModels):
         data = tuple(filters.values())
         conds = " AND ".join([f"{key} = %s" for key in filters.keys()])
 
-        SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
+        SQL = f"""
+            SELECT *
+            FROM {cls.table_name}
+            WHERE {conds};
+            """
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        Models.database.cursor.execute(SQL, data)
-        results = Models.database.cursor.fetchall()
+        with Models.database.connection.cursor() as cursor:
+            cursor.execute(SQL, data)
+            results = cursor.fetchall()
 
-        logger.debug(f"Result:\n\t{results}")
+            logger.debug(f"Result:\n\t{results}")
 
-        _instances = []
-        for result in results:
-            _instance_dict = format_to_dict(Models.database.cursor, result)
-            _instance = cls(_instance_dict)
-            _instances.append(_instance)
+            _instances = []
+            for result in results:
+                _instance_dict = format_to_dict(cursor, result)
+                _instance = cls(_instance_dict)
+                _instances.append(_instance)
         return _instances
 
     # @notice: operates like Models.filter() but promises to only return 1 result
@@ -246,22 +283,25 @@ class Models(AbstractModels):
         data = tuple(filters.values())
         conds = " AND ".join([f"{key} = %s" for key in filters.keys()])
 
-        SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
+        SQL = f"""
+            SELECT *
+            FROM {cls.table_name}
+            WHERE {conds};
+            """
 
+        with Models.database.connection.cursor() as cursor:
+            cursor.execute(SQL, data)
+            result = cursor.fetchall()
 
+            logger.debug(f"Result:\n\t{result}")
 
-        Models.database.cursor.execute(SQL, data)
-        result = Models.database.cursor.fetchall()
+            if len(result) == 0: return None
 
-        logger.debug(f"Result:\n\t{result}")
+            assert len(result) == 1, "The set of filters applied are not unique to one row."
 
-        if len(result) == 0: return None
-
-        assert len(result) == 1, "The set of filters applied are not unique to one row."
-
-        result, = result
-        _instance_dict = format_to_dict(Models.database.cursor, result)
-        _instance = cls(_instance_dict)
+            result, = result
+            _instance_dict = format_to_dict(cursor, result)
+            _instance = cls(_instance_dict)
         return _instance
 
 
@@ -269,21 +309,28 @@ class Models(AbstractModels):
     def like(cls, condition, value):
         assert cls.verify_attributes([condition])
 
-        SQL = f"SELECT * FROM {cls.table_name} WHERE {condition} ILIKE %s;"
+        SQL = f"""
+            SELECT *
+            FROM {cls.table_name}
+            WHERE {condition}
+            ILIKE %s;
+            """
+
         data = (value,)
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        Models.database.cursor.execute(SQL, data)
-        results = Models.database.cursor.fetchall()
+        with Models.database.connection.cursor() as cursor:
+            cursor.execute(SQL, data)
+            results = cursor.fetchall()
 
-        logger.debug(f"Result:\n\t{results}")
+            logger.debug(f"Result:\n\t{results}")
 
-        _instances = []
-        for result in results:
-            _instance_dict = format_to_dict(Models.database.cursor, result)
-            _instance = cls(_instance_dict)
-            _instances.append(_instance)
+            _instances = []
+            for result in results:
+                _instance_dict = format_to_dict(cursor, result)
+                _instance = cls(_instance_dict)
+                _instances.append(_instance)
         return _instances
 
 
@@ -311,9 +358,15 @@ class Models(AbstractModels):
     @classmethod
     def _get_attributes(cls):
         if cls.table_attributes is None:
-            SQL = f"SELECT * FROM {cls.table_name} LIMIT 0"
-            Models.database.cursor.execute(SQL)
-            cls.table_attributes = [attr.name for attr in Models.database.cursor.description]
+            SQL = f"""
+                SELECT *
+                FROM {cls.table_name}
+                LIMIT 0
+                """
+
+            with Models.database.connection.cursor() as cursor:
+                cursor.execute(SQL)
+                cls.table_attributes = [attr.name for attr in cursor.description]
 
             logger.debug(f"Table attributes are initialized as: {cls.table_attributes}")
         return cls.table_attributes
@@ -329,12 +382,19 @@ class Models(AbstractModels):
         data = tuple(attributes.values())
         conds = format_query_statement(attributes.keys(), attributes)
 
-        SQL = f"SELECT * FROM {cls.table_name} WHERE {conds};"
+        SQL = f"""
+            SELECT *
+            FROM {cls.table_name}
+            WHERE {conds};
+            """
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        Models.database.cursor.execute(SQL, data)
-        return Models.database.cursor.fetchone() is not None
+        with Models.database.connection.cursor() as cursor:
+            cursor.execute(SQL, data)
+            result = cursor.fetchone()
+
+        return result is not None
 
 
     def to_dict(self, serializable=True):

@@ -29,7 +29,6 @@ def parse_uri(database_uri):
 class DatabaseConnection:
     _instance = None
     _debug = None
-    cursor = None
     connection = None
 
     def __init__(self):
@@ -38,11 +37,10 @@ class DatabaseConnection:
             raise Exception("Database instance should only be created once.")
         else:
             DatabaseConnection._debug = DatabaseConnection.get_debug()
-            DatabaseConnection.cursor, DatabaseConnection.connection = DatabaseConnection.get_db()
+            DatabaseConnection.connection = DatabaseConnection.get_conn()
             DatabaseConnection._instance = self
             if DatabaseConnection._debug:
                 print("Database connection: ", DatabaseConnection.connection)
-                print("Database cursor: ", DatabaseConnection.cursor)
 
     @staticmethod
     def get_instance():
@@ -65,9 +63,8 @@ class DatabaseConnection:
 
     #returns a database connection by reading the uri from the environment
     @staticmethod
-    def get_db(debug=None):
+    def get_conn(debug=None):
         conn = None
-        cur = None
         try:
             #build exception for when URI cannot be found in environment
             database_uri = os.environ.get("DATABASE_URL", "Connection Failed.")
@@ -87,18 +84,12 @@ class DatabaseConnection:
             except Exception as connection_error:
                 #TODO: log error to file with traceback
                 print(connection_error)
-            else:
-                #call the 'cursor' to make edits/db calls
-                cur = conn.cursor()
         finally:
-            return cur, conn
+            return conn
 
-    #we need to close the db and the connect established in 'get_db'
+    #we need to close the db and the connect established in 'get_conn'
     @classmethod
-    def close_db(cls):
-        if cls.cursor:
-            cls.cursor.close()
-            cls.cursor = None
+    def close_conn(cls):
         if cls.connection:
             cls.connection.close()
             cls.connection = None

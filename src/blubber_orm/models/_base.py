@@ -5,7 +5,7 @@ from psycopg2 import InternalError, IntegrityError
 from datetime import datetime, date, time
 from abc import ABC, abstractmethod
 
-from ._conn import DatabaseConnection, format_to_dict
+from ._conn import Connection
 
 from blubber_orm.utils import format_query_statement, format_query_data
 
@@ -38,7 +38,7 @@ class AbstractModels(ABC):
     table_name = None
     table_primaries = None
     table_attributes = None
-    database = DatabaseConnection.get_instance()
+    database = Connection.get_instance()
 
     @classmethod
     @abstractmethod
@@ -136,7 +136,7 @@ class Models(AbstractModels):
 
             logger.debug(f"Result:\n\t{result}")
 
-            pkey = format_to_dict(cursor, result)
+            pkey = Connection.format_to_dict(cursor, result)
 
         _instance = cls.get(pkey)
         return _instance
@@ -165,7 +165,7 @@ class Models(AbstractModels):
 
             if result is None: return None
 
-            _instance_dict = format_to_dict(cursor, result)
+            _instance_dict = Connection.format_to_dict(cursor, result)
 
         _instance = cls(_instance_dict)
         return _instance
@@ -235,7 +235,7 @@ class Models(AbstractModels):
 
             _instances = []
             for result in results:
-                _instance_dict = format_to_dict(cursor, result)
+                _instance_dict = Connection.format_to_dict(cursor, result)
                 _instance = cls(_instance_dict)
                 _instances.append(_instance)
         return _instances
@@ -267,7 +267,7 @@ class Models(AbstractModels):
 
             _instances = []
             for result in results:
-                _instance_dict = format_to_dict(cursor, result)
+                _instance_dict = Connection.format_to_dict(cursor, result)
                 _instance = cls(_instance_dict)
                 _instances.append(_instance)
         return _instances
@@ -300,23 +300,34 @@ class Models(AbstractModels):
             assert len(result) == 1, "The set of filters applied are not unique to one row."
 
             result, = result
-            _instance_dict = format_to_dict(cursor, result)
+            _instance_dict = Connection.format_to_dict(cursor, result)
             _instance = cls(_instance_dict)
         return _instance
 
 
     @classmethod
-    def like(cls, condition, value):
-        assert cls.verify_attributes([condition])
+    def like(cls, column, search, where="any", case_sensitive=False):
+        assert cls.verify_attributes([column]), "Error: invalid column name."
+        assert where in ["start", "any", "end"], "Error: invalid search location."
 
+        if where == "start": search = f"{search}%"
+        elif where == "any": search = f"%{search}%"
+        elif where == "end": search = f"%{search}"
+
+        if case_sensitive: like_command = 'LIKE'
+        else: like_command = 'ILIKE'
+
+        # FLAG: 'column' is directly formatted into the str... *ONLY* because of this check^
+        # do *NOT* replicate this implementation...
         SQL = f"""
             SELECT *
             FROM {cls.table_name}
-            WHERE {condition}
-            ILIKE %s;
+            WHERE {column}
+            {like_command} %s
+            ESCAPE '';
             """
 
-        data = (value,)
+        data = (search, )
 
         logger.debug(f"Query:\n\t{SQL}")
 
@@ -328,7 +339,7 @@ class Models(AbstractModels):
 
             _instances = []
             for result in results:
-                _instance_dict = format_to_dict(cursor, result)
+                _instance_dict = Connection.format_to_dict(cursor, result)
                 _instance = cls(_instance_dict)
                 _instances.append(_instance)
         return _instances
@@ -352,7 +363,7 @@ class Models(AbstractModels):
             if len(_query_attributes) == 0: return True
             else: return cls.verify_attributes(_query_attributes)
 
-        raise Excetion(f"NotTableAttributeError, {_attribute} is not an attribute of {cls.table_name}.")
+        logger.error(f"NotTableAttributeError, {_attribute} is not an attribute of {cls.table_name}.")
 
 
     @classmethod

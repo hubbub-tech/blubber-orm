@@ -11,6 +11,26 @@ CREATE TABLE addresses (
 );
 
 
+CREATE TABLE from_addresses (
+  line_1 varchar(100),
+  line_2 varchar(100),
+  country varchar(100),
+  zip varchar(11),
+  PRIMARY KEY (line_1, line_2, country, zip),
+  FOREIGN KEY (line_1, line_2, country, zip) REFERENCES addresses (line_1, line_2, country, zip)
+);
+
+
+CREATE TABLE to_addresses (
+  line_1 varchar(100),
+  line_2 varchar(100),
+  country varchar(100),
+  zip varchar(11),
+  PRIMARY KEY (line_1, line_2, country, zip),
+  FOREIGN KEY (line_1, line_2, country, zip) REFERENCES addresses (line_1, line_2, country, zip)
+);
+
+
 CREATE TABLE users (
   id varchar(100),
   name varchar(100),
@@ -25,7 +45,6 @@ CREATE TABLE users (
   session_key varchar(20),
   address_line_1 varchar(100),
   address_line_2 varchar(100),
-  address_city varchar(100),
   address_country varchar(100),
   address_zip varchar(11),
   PRIMARY KEY (id),
@@ -63,7 +82,6 @@ CREATE TABLE items (
   manufacturer_id varchar(100),
   address_line_1 varchar(100),
   address_line_2 varchar(100),
-  address_city varchar(100),
   address_country varchar(100),
   address_zip varchar(11),
   PRIMARY KEY (id),
@@ -130,11 +148,24 @@ CREATE TABLE payers (
 );
 
 
+CREATE TABLE senders (
+  sender_id varchar(100),
+  PRIMARY KEY (sender_id),
+  FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE TABLE receivers (
+  receiver_id varchar(100),
+  PRIMARY KEY (receiver_id),
+  FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+
 CREATE TABLE reservations (
   dt_started timestamp,
   dt_ended timestamp,
   is_calendared boolean DEFAULT FALSE,
-  is_extended boolean DEFAULT FALSE,
+  is_extension boolean DEFAULT FALSE,
   is_in_cart boolean DEFAULT FALSE,
   renter_id varchar(100),
   item_id varchar(100),
@@ -167,8 +198,7 @@ CREATE TABLE orders (
  id varchar(100),
  dt_placed timestamp DEFAULT LOCALTIMESTAMP,
  is_canceled boolean DEFAULT FALSE,
- is_dropoff_sched boolean DEFAULT FALSE,
- is_pickup_sched boolean DEFAULT FALSE,
+ referral varchar(100),
  lister_id varchar(100),
  item_id varchar(100),
  renter_id varchar(100),
@@ -215,6 +245,7 @@ CREATE TABLE charges (
   id varchar(100),
   notes text
   amount float,
+  currency varchar(10),
   payment_type varchar(100),
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
   order_id varchar(100),
@@ -230,37 +261,48 @@ CREATE TABLE charges (
 
 
 CREATE TABLE logistics (
-  dt_created timestamp DEFAULT LOCALTIMESTAMP,
+  id varchar(100),
   notes text,
-  referral varchar(100),
   timeslots text,
-  renter_id varchar(100),
-  time_chosen time,
-  address_line_1 varchar(100),
-  address_line_2 varchar(100),
-  address_city varchar(100),
-  address_country varchar(100),
-  address_zip varchar(11),
-  PRIMARY KEY (dt_created, renter_id),
-  FOREIGN KEY (renter_id) REFERENCES renters (renter_id),
-  FOREIGN KEY (address_line_1, address_line_2, address_country, address_zip) REFERENCES addresses (line_1, line_2, country, zip)
+  dt_created timestamp DEFAULT LOCALTIMESTAMP,
+
+  date_sched date CHECK (date_sched > dt_created),
+  time_sched time,
+
+  dt_sent timestamp,
+  dt_received timestamp,
+
+  sender_id varchar(100),
+  receiver_id varchar(100),
+
+  from_addr_line_1 varchar(100),
+  from_addr_line_2 varchar(100),
+  from_addr_country varchar(100),
+  from_addr_zip varchar(11),
+
+  to_addr_line_1 varchar(100),
+  to_addr_line_2 varchar(100),
+  to_addr_country varchar(100),
+  to_addr_zip varchar(11),
+
+  courier_id varchar(100),
+  PRIMARY KEY (id),
+  FOREIGN KEY (courier_id) REFERENCES couriers (courier_id),
+  FOREIGN KEY (sender_id) REFERENCES senders (sender_id),
+  FOREIGN KEY (receiver_id) REFERENCES receivers (receiver_id),
+  FOREIGN KEY (from_addr_line_1, from_addr_line_2, from_addr_country, from_addr_zip) REFERENCES from_addresses (line_1, line_2, country, zip),
+  FOREIGN KEY (to_addr_line_1, to_addr_line_2, to_addr_country, to_addr_zip) REFERENCES to_addresses (line_1, line_2, country, zip)
 );
 
-CREATE TABLE pickups (
-  date_sched date CHECK (date_sched > dt_created),
-  dt_created timestamp,
-  renter_id varchar(100),
-  PRIMARY KEY (date_sched, dt_created, renter_id),
-  FOREIGN KEY (dt_created, renter_id) REFERENCES logistics (dt_created, renter_id) ON DELETE CASCADE
-);
 
-CREATE TABLE dropoffs (
-  date_sched date CHECK (date_sched > dt_created),
-  dt_created timestamp,
-  renter_id varchar(100),
-  PRIMARY KEY (date_sched, dt_created, renter_id),
-  FOREIGN KEY (dt_created, renter_id) REFERENCES logistics (dt_created, renter_id) ON DELETE CASCADE
-);
+CREATE TABLE order_logistics (
+  order_id varchar(100),
+  logsitics_id varchar(100),
+  PRIMARY KEY (order_id, logsitics_id),
+  FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
+  FOREIGN KEY (logsitics_id) REFERENCES logsitics (id) ON DELETE CASCADE
+)
+
 
 CREATE TABLE tags (
  title varchar(75),
@@ -275,27 +317,6 @@ CREATE TABLE item_tags (
  FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
 );
 
-CREATE TABLE order_pickups (
- order_id varchar(100),
- date_sched date,
- renter_id varchar(100),
- dt_sched timestamp,
- dt_completed timestamp,
- PRIMARY KEY (order_id),
- FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
- FOREIGN KEY (date_sched, dt_created, renter_id) REFERENCES pickups (date_sched, dt_created, renter_id) ON DELETE CASCADE
-);
-
-CREATE TABLE order_dropoffs (
- order_id varchar(100),
- date_sched date,
- renter_id varchar(100),
- dt_sched timestamp,
- dt_completed timestamp,
- PRIMARY KEY (order_id),
- FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
- FOREIGN KEY (date_sched, dt_created, renter_id) REFERENCES dropoffs (date_sched, dt_created, renter_id) ON DELETE CASCADE
-);
 
 CREATE TABLE issues (
  id varchar(100),
@@ -318,7 +339,6 @@ CREATE TABLE promos (
   discount_type varchar(50),
   dt_activated timestamp,
   dt_expired timestamp,
-  is_active boolean,
   PRIMARY KEY (title)
 )
 

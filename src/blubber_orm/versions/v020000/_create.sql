@@ -61,59 +61,6 @@ CREATE TABLE carts (
 );
 
 
-CREATE TABLE items (
-  id varchar(100),
-  name varchar(100),
-  retail_price float,
-  is_visible boolean DEFAULT TRUE,
-  is_transactable boolean DEFAULT TRUE,
-  is_featured boolean DEFAULT FALSE,
-  dt_created timestamp DEFAULT LOCALTIMESTAMP,
-  is_locked boolean DEFAULT FALSE,
-  description text,
-  weight float,
-  weight_unit varchar(4),
-  dim_height float,
-  dim_length float,
-  dim_width float,
-  dim_unit varchar(4),
-  locker_id varchar(100),
-  lister_id varchar(100),
-  manufacturer_id varchar(100),
-  address_line_1 varchar(100),
-  address_line_2 varchar(100),
-  address_country varchar(100),
-  address_zip varchar(11),
-  PRIMARY KEY (id),
-  FOREIGN KEY (address_line_1, address_line_2, address_country, address_zip) REFERENCES addresses (line_1, line_2, country, zip),
-  FOREIGN KEY (lister_id) REFERENCES listers (lister_id),
-  FOREIGN KEY (locker_id) REFERENCES renters (renter_id),
-  FOREIGN KEY (manufacturer_id) REFERENCES manufacturers (id)
-);
-
-CREATE TABLE manufacturers (
-  id varchar(100),
-  brand varchar(100),
-  PRIMARY KEY (id)
-);
-
-CREATE TABLE calendars (
-  dt_started timestamp,
-  dt_ended timestamp,
-  id varchar(100),
-  PRIMARY KEY (id),
-  FOREIGN KEY (id) REFERENCES items (id) ON DELETE CASCADE
-);
-
-
-CREATE TABLE item_carts (
-  cart_id varchar(100),
-  item_id varchar(100),
-  PRIMARY KEY (cart_id, item_id),
-  FOREIGN KEY (cart_id) REFERENCES carts (id) ON DELETE CASCADE,
-  FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
-);
-
 
 CREATE TABLE couriers (
   courier_id varchar(100),
@@ -158,6 +105,63 @@ CREATE TABLE receivers (
   receiver_id varchar(100),
   PRIMARY KEY (receiver_id),
   FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+
+
+CREATE TABLE items (
+  id varchar(100),
+  name varchar(100),
+  retail_price float,
+  is_visible boolean DEFAULT TRUE,
+  is_transactable boolean DEFAULT TRUE,
+  is_featured boolean DEFAULT FALSE,
+  dt_created timestamp DEFAULT LOCALTIMESTAMP,
+  is_locked boolean DEFAULT FALSE,
+  description text,
+  weight float,
+  weight_unit varchar(4),
+  dim_height float,
+  dim_length float,
+  dim_width float,
+  dim_unit varchar(4),
+  locker_id varchar(100),
+  lister_id varchar(100),
+  manufacturer_id varchar(100),
+  address_line_1 varchar(100),
+  address_line_2 varchar(100),
+  address_country varchar(100),
+  address_zip varchar(11),
+  PRIMARY KEY (id),
+  FOREIGN KEY (address_line_1, address_line_2, address_country, address_zip) REFERENCES addresses (line_1, line_2, country, zip),
+  FOREIGN KEY (lister_id) REFERENCES listers (lister_id),
+  FOREIGN KEY (locker_id) REFERENCES renters (renter_id),
+  FOREIGN KEY (manufacturer_id) REFERENCES manufacturers (id)
+);
+
+
+CREATE TABLE calendars (
+  dt_started timestamp,
+  dt_ended timestamp,
+  id varchar(100),
+  PRIMARY KEY (id),
+  FOREIGN KEY (id) REFERENCES items (id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE item_carts (
+  cart_id varchar(100),
+  item_id varchar(100),
+  PRIMARY KEY (cart_id, item_id),
+  FOREIGN KEY (cart_id) REFERENCES carts (id) ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE manufacturers (
+  id varchar(100),
+  brand varchar(100),
+  PRIMARY KEY (id)
 );
 
 
@@ -209,25 +213,6 @@ CREATE TABLE orders (
  FOREIGN KEY (res_dt_start, res_dt_end, renter_id, item_id) REFERENCES reservations (dt_started, dt_ended, renter_id, item_id) ON DELETE CASCADE
 );
 
-CREATE TABLE reviews (
- id varchar(100),
- body text,
- dt_created timestamp DEFAULT LOCALTIMESTAMP,
- rating float,
- item_id varchar(100),
- author_id varchar(100),
- PRIMARY KEY (id),
- FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE,
- FOREIGN KEY (author_id) REFERENCES renters (renter_id)
-);
-
-CREATE TABLE testimonials (
- dt_created DEFAULT LOCALTIMESTAMP,
- body text,
- user_id varchar(100),
- PRIMARY KEY (user_id, dt_created),
- FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
 
 CREATE TABLE extensions (
  order_id varchar(100),
@@ -243,7 +228,7 @@ CREATE TABLE extensions (
 
 CREATE TABLE charges (
   id varchar(100),
-  notes text
+  notes text,
   amount float,
   currency varchar(10),
   payment_type varchar(100),
@@ -259,6 +244,27 @@ CREATE TABLE charges (
   FOREIGN KEY (issue_id) REFERENCES issues (id)
 );
 
+
+CREATE TABLE promos (
+  title varchar(100),
+  description text,
+  sku integer,
+  discount_value float,
+  discount_unit varchar(50),
+  discount_type varchar(50),
+  dt_activated timestamp,
+  dt_expired timestamp,
+  PRIMARY KEY (title)
+);
+
+CREATE TABLE order_promos (
+  order_id varchar(100),
+  promo_title varchar(100),
+  dt_applied timestamp DEFAULT LOCALTIMESTAMP,
+  PRIMARY KEY (order_id, promo_title),
+  FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
+  FOREIGN KEY (promo_title) REFERENCES promos (title) ON DELETE CASCADE
+);
 
 CREATE TABLE logistics (
   id varchar(100),
@@ -301,7 +307,7 @@ CREATE TABLE order_logistics (
   PRIMARY KEY (order_id, logsitics_id),
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
   FOREIGN KEY (logsitics_id) REFERENCES logsitics (id) ON DELETE CASCADE
-)
+);
 
 
 CREATE TABLE tags (
@@ -330,23 +336,23 @@ CREATE TABLE issues (
  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE TABLE promos (
-  title varchar(100),
-  description text,
-  sku integer,
-  discount_value float,
-  discount_unit varchar(50),
-  discount_type varchar(50),
-  dt_activated timestamp,
-  dt_expired timestamp,
-  PRIMARY KEY (title)
-)
 
-CREATE TABLE order_promos (
-  order_id varchar(100),
-  promo_title varchar(100),
-  dt_applied timestamp DEFAULT LOCALTIMESTAMP,
-  PRIMARY KEY (order_id, promo_title),
-  FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
-  FOREIGN KEY (promo_title) REFERENCES promos (title) ON DELETE CASCADE
-)
+CREATE TABLE reviews (
+ id varchar(100),
+ body text,
+ dt_created timestamp DEFAULT LOCALTIMESTAMP,
+ rating float,
+ item_id varchar(100),
+ author_id varchar(100),
+ PRIMARY KEY (id),
+ FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE,
+ FOREIGN KEY (author_id) REFERENCES renters (renter_id)
+);
+
+CREATE TABLE testimonials (
+ dt_created timestamp DEFAULT LOCALTIMESTAMP,
+ body text,
+ user_id varchar(100),
+ PRIMARY KEY (user_id, dt_created),
+ FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);

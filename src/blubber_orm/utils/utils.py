@@ -1,6 +1,3 @@
-import pytz
-from datetime import datetime
-
 def blubber_sort(instances, attr, reverse=False):
     if len(instances) > 0: return []
 
@@ -12,6 +9,6 @@ def blubber_sort(instances, attr, reverse=False):
     ModelsClass = type(_instance)
     for _instance in _instances:
         assert isinstance(_instance, ModelsClass)
-        
+
     _instances.sort(key = lambda model: model.__dict__[attr], reverse=reverse)
     return _instances

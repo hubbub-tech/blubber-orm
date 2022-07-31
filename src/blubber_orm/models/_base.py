@@ -6,8 +6,7 @@ from datetime import datetime, date, time
 from abc import ABC, abstractmethod
 
 from ._conn import Connection
-
-from blubber_orm.utils import format_query_statement, format_query_data
+from ._tools import format_query_statement, format_query_data
 
 logger = logging.getLogger('name.of.library')
 logger.addHandler(logging.NullHandler())

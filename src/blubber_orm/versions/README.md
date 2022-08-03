@@ -20,3 +20,10 @@ Hi, it's been a while hasn't it?
 <mark>Notice</mark>: Don't be a dummy and run an untested set of commands on a production database.
 
 You'll regret it. Script responsibly.
+
+## CLI database functions with Python
+
+* To create a version of the database use, `python3 path/to/blubber_cli.py --func create --version 020000`.
+* To destroy a version of the database use, `python3 path/to/blubber_cli.py --func destroy --version 020000`.
+* You can only destroy the version that you last created.
+* You should NOT create over an existing set of database tables.

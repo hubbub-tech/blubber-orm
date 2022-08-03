@@ -11,6 +11,8 @@ build/
 
 # Private files
 .env
+.env.test
+
 todo.txt
 cheat.txt
 src/blubber_orm/error.log

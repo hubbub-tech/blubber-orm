@@ -5,10 +5,10 @@ from psycopg2 import InternalError, IntegrityError
 from datetime import datetime, date, time
 from abc import ABC, abstractmethod
 
-from ._conn import Connection
+from ._conn import Blubber
 from ._utils import format_query_statement, format_query_data
 
-logger = logging.getLogger('name.of.library')
+logger = logging.getLogger('blubber-orm')
 logger.addHandler(logging.NullHandler())
 
 class AbstractModels(ABC):
@@ -31,13 +31,14 @@ class AbstractModels(ABC):
     table_primaries => defines the primary key(s) of the modeled table. Class-level
     attribute.
 
-    database => stored database connection and cursor for SQL scripts.
+    db => Blubber instance which stores database connection and cursor for SQL scripts.
     """
 
     table_name = None
     table_primaries = None
     table_attributes = None
-    database = Connection.get_instance()
+
+    db = Blubber.get_instance()
 
     @classmethod
     @abstractmethod
@@ -103,7 +104,7 @@ class Models(AbstractModels):
 
     @classmethod
     def insert(cls, attributes):
-        debug_mode = Models.database._debug
+        debug_mode = Models.db._debug
 
         cols = ", ".join(attributes.keys())
         values = ", ".join(["%s"] * len(attributes))
@@ -118,24 +119,24 @@ class Models(AbstractModels):
 
         data = tuple(attributes.values())
 
-        with Models.database.connection.cursor() as cursor:
+        with Models.db.conn.cursor() as cursor:
 
             try:
                 cursor.execute(SQL, data)
 
             except IntegrityError.UniqueViolation as e:
                 logger.error(e, exc_info=True)
-                Models.database.connection.rollback()
+                Models.db.conn.rollback()
                 return None
 
             logger.debug(f"Query:\n\t{SQL}")
 
-            Models.database.connection.commit()
+            Models.db.conn.commit()
             result = cursor.fetchone()
 
             logger.debug(f"Result:\n\t{result}")
 
-            pkey = Connection.format_to_dict(cursor, result)
+            pkey = Blubber.format_to_dict(cursor, result)
 
         _instance = cls.get(pkey)
         return _instance
@@ -156,7 +157,7 @@ class Models(AbstractModels):
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        with Models.database.connection.cursor() as cursor:
+        with Models.db.conn.cursor() as cursor:
             cursor.execute(SQL, data)
             result = cursor.fetchone()
 
@@ -164,7 +165,7 @@ class Models(AbstractModels):
 
             if result is None: return None
 
-            _instance_dict = Connection.format_to_dict(cursor, result)
+            _instance_dict = Blubber.format_to_dict(cursor, result)
 
         _instance = cls(_instance_dict)
         return _instance
@@ -190,15 +191,15 @@ class Models(AbstractModels):
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        with Models.database.connection.cursor() as cursor:
+        with Models.db.conn.cursor() as cursor:
             cursor.execute(SQL, data)
 
-            Models.database.connection.commit()
+            Models.db.conn.commit()
 
 
     @classmethod
     def delete(cls, pkeys):
-        is_debugging = Models.database._debug
+        is_debugging = Models.db._debug
 
         data = format_query_data(cls.table_primaries, pkeys)
         conds = format_query_statement(cls.table_primaries, pkeys)
@@ -211,10 +212,10 @@ class Models(AbstractModels):
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        with Models.database.connection.cursor() as cursor:
+        with Models.db.conn.cursor() as cursor:
             cursor.execute(SQL, data)
 
-            Models.database.connection.commit()
+            Models.db.conn.commit()
 
 
     @classmethod
@@ -226,7 +227,7 @@ class Models(AbstractModels):
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        with Models.database.connection.cursor() as cursor:
+        with Models.db.conn.cursor() as cursor:
             cursor.execute(SQL)
             results = cursor.fetchall()
 
@@ -234,7 +235,7 @@ class Models(AbstractModels):
 
             _instances = []
             for result in results:
-                _instance_dict = Connection.format_to_dict(cursor, result)
+                _instance_dict = Blubber.format_to_dict(cursor, result)
                 _instance = cls(_instance_dict)
                 _instances.append(_instance)
         return _instances
@@ -258,7 +259,7 @@ class Models(AbstractModels):
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        with Models.database.connection.cursor() as cursor:
+        with Models.db.conn.cursor() as cursor:
             cursor.execute(SQL, data)
             results = cursor.fetchall()
 
@@ -266,7 +267,7 @@ class Models(AbstractModels):
 
             _instances = []
             for result in results:
-                _instance_dict = Connection.format_to_dict(cursor, result)
+                _instance_dict = Blubber.format_to_dict(cursor, result)
                 _instance = cls(_instance_dict)
                 _instances.append(_instance)
         return _instances
@@ -288,7 +289,7 @@ class Models(AbstractModels):
             WHERE {conds};
             """
 
-        with Models.database.connection.cursor() as cursor:
+        with Models.db.conn.cursor() as cursor:
             cursor.execute(SQL, data)
             result = cursor.fetchall()
 
@@ -299,7 +300,7 @@ class Models(AbstractModels):
             assert len(result) == 1, "The set of filters applied are not unique to one row."
 
             result, = result
-            _instance_dict = Connection.format_to_dict(cursor, result)
+            _instance_dict = Blubber.format_to_dict(cursor, result)
             _instance = cls(_instance_dict)
         return _instance
 
@@ -330,7 +331,7 @@ class Models(AbstractModels):
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        with Models.database.connection.cursor() as cursor:
+        with Models.db.conn.cursor() as cursor:
             cursor.execute(SQL, data)
             results = cursor.fetchall()
 
@@ -338,7 +339,7 @@ class Models(AbstractModels):
 
             _instances = []
             for result in results:
-                _instance_dict = Connection.format_to_dict(cursor, result)
+                _instance_dict = Blubber.format_to_dict(cursor, result)
                 _instance = cls(_instance_dict)
                 _instances.append(_instance)
         return _instances
@@ -374,7 +375,7 @@ class Models(AbstractModels):
                 LIMIT 0
                 """
 
-            with Models.database.connection.cursor() as cursor:
+            with Models.db.conn.cursor() as cursor:
                 cursor.execute(SQL)
                 cls.table_attributes = [attr.name for attr in cursor.description]
 
@@ -400,7 +401,7 @@ class Models(AbstractModels):
 
         logger.debug(f"Query:\n\t{SQL}")
 
-        with Models.database.connection.cursor() as cursor:
+        with Models.db.conn.cursor() as cursor:
             cursor.execute(SQL, data)
             result = cursor.fetchone()
 

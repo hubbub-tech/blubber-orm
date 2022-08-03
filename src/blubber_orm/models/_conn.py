@@ -4,28 +4,29 @@ from psycopg2 import connect
 from uritools import urisplit
 
 
-#simple singleton design pattern
-class Connection:
+class Blubber:
+    """A class to store a connection to the Postgres database using psycopg2."""
+
     _instance = None
     _debug = None
-    connection = None
+    conn = None
 
     def __init__(self):
-        if Connection._instance:
+        if Blubber._instance:
             #TODO: log that this problem happened
             raise Exception("Database instance should only be created once.")
         else:
-            Connection._debug = Connection.get_debug()
-            Connection.connection = Connection.open_conn()
-            Connection._instance = self
-            if Connection._debug:
-                logging.info("Database connection: ", Connection.connection)
+            Blubber._debug = Blubber.get_debug()
+            Blubber.conn = Blubber.open_conn()
+            Blubber._instance = self
+            if Blubber._debug:
+                logging.info("Database connection: ", Blubber.conn)
 
     @staticmethod
     def get_instance():
-        if Connection._instance is None:
-            Connection()
-        return Connection._instance
+        if Blubber._instance is None:
+            Blubber()
+        return Blubber._instance
 
     @staticmethod
     def get_debug():
@@ -71,7 +72,7 @@ class Connection:
         try:
             #build exception for when URI cannot be found in environment
             database_uri = os.environ.get("DATABASE_URL", "Connection Failed.")
-            credentials = Connection.parse_uri(database_uri)
+            credentials = Blubber.parse_uri(database_uri)
         except AssertionError as not_postgres_error:
             print(not_postgres_error)
         else:
@@ -94,7 +95,6 @@ class Connection:
     #we need to close the db and the connect established in 'open_conn'
     @classmethod
     def close_conn(cls):
-        if cls.connection:
-            cls.connection.close()
-            cls.connection = None
-        cls._instance = None
+        if cls.conn:
+            cls.conn.close()
+            cls.conn = None

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blubber-orm"
+version = "2.0.0"
+description = "Simple Postgres access for Python Apps through psycopg2."
+readme = "README.md"
+authors = [{ name = "Ade Balogun", email = "ade.d.balogun@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: Apache License 2.0",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+keywords = ["blubber", "orm", "psycopg2"]
+dependencies = [
+    "DateTime == 4.3",
+    "psycopg2 == 2.8.6",
+    "pytz == 2021.1",
+    "uritools == 3.0.1",
+    "Werkzeug == 1.0.1",
+    "zope.interface == 5.3.0",
+]
+requires-python = ">=3.6"
+
+
+[project.urls]
+"Homepage" = "https://github.com/hubbub-tech/blubber-orm"
+"Bug Tracker" = "https://github.com/hubbub-tech/blubber-orm/issues"

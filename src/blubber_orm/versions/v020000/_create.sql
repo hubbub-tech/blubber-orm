@@ -34,7 +34,7 @@ CREATE TABLE to_addresses (
 CREATE TABLE users (
   id SERIAL,
   name varchar(64),
-  phone varchar(16),
+  phone varchar(32),
   email varchar(64) UNIQUE,
   password varchar(256),
   bio text,
@@ -108,10 +108,16 @@ CREATE TABLE receivers (
 );
 
 
+CREATE TABLE manufacturers (
+  id SERIAL,
+  brand varchar(32),
+  PRIMARY KEY (id)
+);
+
 
 CREATE TABLE items (
   id SERIAL,
-  name varchar(32),
+  name varchar(64),
   retail_price float,
   is_visible boolean DEFAULT TRUE,
   is_transactable boolean DEFAULT TRUE,
@@ -158,13 +164,6 @@ CREATE TABLE item_carts (
 );
 
 
-CREATE TABLE manufacturers (
-  id SERIAL,
-  brand varchar(32),
-  PRIMARY KEY (id)
-);
-
-
 CREATE TABLE reservations (
   dt_started timestamp,
   dt_ended timestamp,
@@ -182,19 +181,6 @@ CREATE TABLE reservations (
   FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
 );
 
-CREATE TABLE reservations_archived (
-  dt_started timestamp,
-  dt_ended timestamp,
-  renter_id int,
-  item_id int,
-  notes text,
-  order_id int,
-  dt_archived timestamp DEFAULT LOCALTIMESTAMP,
-  PRIMARY KEY (dt_started, dt_ended, renter_id, item_id),
-  FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
-  FOREIGN KEY (dt_started, dt_ended, renter_id, item_id) REFERENCES reservations (dt_started, dt_ended, renter_id, item_id) ON DELETE CASCADE
-);
-
 
 CREATE TABLE orders (
  id SERIAL,
@@ -210,6 +196,20 @@ CREATE TABLE orders (
 );
 
 
+CREATE TABLE reservations_archived (
+  dt_started timestamp,
+  dt_ended timestamp,
+  renter_id int,
+  item_id int,
+  notes text,
+  order_id int,
+  dt_archived timestamp DEFAULT LOCALTIMESTAMP,
+  PRIMARY KEY (dt_started, dt_ended, renter_id, item_id),
+  FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
+  FOREIGN KEY (dt_started, dt_ended, renter_id, item_id) REFERENCES reservations (dt_started, dt_ended, renter_id, item_id) ON DELETE CASCADE
+);
+
+
 CREATE TABLE extensions (
  order_id int,
  renter_id int,
@@ -219,6 +219,19 @@ CREATE TABLE extensions (
  PRIMARY KEY (order_id, res_dt_end),
  FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
  FOREIGN KEY (res_dt_start, res_dt_end, renter_id, item_id) REFERENCES reservations (dt_started, dt_ended, renter_id, item_id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE issues (
+ id SERIAL,
+ body text,
+ slug varchar(128),
+ user_id int,
+ resolution text,
+ is_resolved boolean DEFAULT FALSE,
+ dt_created timestamp DEFAULT LOCALTIMESTAMP,
+ PRIMARY KEY (id),
+ FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 
@@ -293,7 +306,7 @@ CREATE TABLE logistics_couriers (
   PRIMARY KEY (logistics_id, courier_id),
   FOREIGN KEY (logistics_id) REFERENCES logistics (id) ON DELETE CASCADE,
   FOREIGN KEY (courier_id) REFERENCES couriers (courier_id) ON DELETE CASCADE
-)
+);
 
 
 CREATE TABLE timeslots (
@@ -312,7 +325,7 @@ CREATE TABLE order_logistics (
   logsitics_id int,
   PRIMARY KEY (order_id, logsitics_id),
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
-  FOREIGN KEY (logsitics_id) REFERENCES logsitics (id) ON DELETE CASCADE
+  FOREIGN KEY (logsitics_id) REFERENCES logistics (id) ON DELETE CASCADE
 );
 
 
@@ -327,19 +340,6 @@ CREATE TABLE item_tags (
  PRIMARY KEY (item_id, title),
  FOREIGN KEY (title) REFERENCES tags (title) ON DELETE CASCADE,
  FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
-);
-
-
-CREATE TABLE issues (
- id SERIAL,
- body text,
- slug varchar(128),
- user_id int,
- resolution text,
- is_resolved boolean DEFAULT FALSE,
- dt_created timestamp DEFAULT LOCALTIMESTAMP,
- PRIMARY KEY (id),
- FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 

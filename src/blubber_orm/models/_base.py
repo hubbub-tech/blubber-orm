@@ -199,7 +199,6 @@ class Models(AbstractModels):
 
     @classmethod
     def delete(cls, pkeys):
-        is_debugging = Models.db._debug
 
         data = format_query_data(cls.table_primaries, pkeys)
         conds = format_query_statement(cls.table_primaries, pkeys)
@@ -230,6 +229,33 @@ class Models(AbstractModels):
         with Models.db.conn.cursor() as cursor:
             cursor.execute(SQL)
             results = cursor.fetchall()
+
+            logger.debug(f"Result:\n\t{results}")
+
+            _instances = []
+            for result in results:
+                _instance_dict = Blubber.format_to_dict(cursor, result)
+                _instance = cls(_instance_dict)
+                _instances.append(_instance)
+        return _instances
+
+
+    @classmethod
+    def get_many(cls, limit):
+        assert isinstance(limit, int), "Limit must be of type integer."
+
+        SQL = f"""
+            SELECT *
+            FROM {cls.table_name}
+            """
+
+        data = (limit,)
+
+        logger.debug(f"Query:\n\t{SQL}")
+
+        with Models.db.conn.cursor() as cursor:
+            cursor.execute(SQL)
+            results = cursor.fetchmany(limit)
 
             logger.debug(f"Result:\n\t{results}")
 

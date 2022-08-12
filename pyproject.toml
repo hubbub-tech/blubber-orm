@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "blubber-orm"
-version = "2.0.0"
+version = "2.0.1"
 description = "Simple Postgres access for Python Apps through psycopg2."
 readme = "README.md"
 authors = [{ name = "Ade Balogun", email = "ade.d.balogun@gmail.com" }]

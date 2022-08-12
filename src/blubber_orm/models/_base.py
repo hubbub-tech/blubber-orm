@@ -37,6 +37,7 @@ class AbstractModels(ABC):
     table_name = None
     table_primaries = None
     table_attributes = None
+    sensitive_attributes = None
 
     db = Blubber.get_instance()
 
@@ -447,7 +448,7 @@ class Models(AbstractModels):
                     _serializable_dict[key] = value.strftime("%Y-%m-%d")
                 elif isinstance(value, time):
                     _serializable_dict[key] = value.strftime("%H:%M")
-                elif key not in ["password", "session"]:
+                elif key not in sensitive_attributes:
                     _serializable_dict[key] = value
             _self_dict = _serializable_dict
         return _self_dict

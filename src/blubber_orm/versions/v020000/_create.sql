@@ -7,6 +7,7 @@ CREATE TABLE addresses (
   zip varchar(64),
   lat float,
   lng float,
+  po_box text,
   PRIMARY KEY (line_1, line_2, country, zip)
 );
 
@@ -218,7 +219,7 @@ CREATE TABLE extensions (
  item_id int,
  res_dt_start timestamp,
  res_dt_end timestamp,
- PRIMARY KEY (order_id, res_dt_end),
+ PRIMARY KEY (order_id, res_dt_start),
  FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
  FOREIGN KEY (res_dt_start, res_dt_end, renter_id, item_id) REFERENCES reservations (dt_started, dt_ended, renter_id, item_id) ON DELETE CASCADE
 );
@@ -282,6 +283,7 @@ CREATE TABLE order_promos (
 CREATE TABLE logistics (
   id SERIAL,
   notes text,
+  is_canceled boolean DEFAULT FALSE,
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
   dt_sent timestamp,
   dt_received timestamp,

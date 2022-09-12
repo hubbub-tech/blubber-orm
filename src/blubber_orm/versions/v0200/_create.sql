@@ -183,6 +183,10 @@ CREATE TABLE reservations (
   FOREIGN KEY (item_id) REFERENCES items (id) ON DELETE CASCADE
 );
 
+CREATE UNIQUE INDEX res_unique_item_cart_pair
+ON reservations (item_id, renter_id, is_in_cart)
+WHERE (is_in_cart = TRUE);
+
 
 CREATE TABLE orders (
  id SERIAL,
@@ -271,14 +275,16 @@ CREATE TABLE promos (
   PRIMARY KEY (title)
 );
 
+
 CREATE TABLE order_promos (
   order_id int,
-  promo_title varchar(16),
+  title varchar(16),
   dt_applied timestamp DEFAULT LOCALTIMESTAMP,
-  PRIMARY KEY (order_id, promo_title),
+  PRIMARY KEY (order_id, title),
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
-  FOREIGN KEY (promo_title) REFERENCES promos (title) ON DELETE CASCADE
+  FOREIGN KEY (title) REFERENCES promos (title) ON DELETE CASCADE
 );
+
 
 CREATE TABLE logistics (
   id SERIAL,
@@ -327,10 +333,10 @@ CREATE TABLE timeslots (
 
 CREATE TABLE order_logistics (
   order_id int,
-  logsitics_id int,
-  PRIMARY KEY (order_id, logsitics_id),
+  logistics_id int,
+  PRIMARY KEY (order_id, logistics_id),
   FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
-  FOREIGN KEY (logsitics_id) REFERENCES logistics (id) ON DELETE CASCADE
+  FOREIGN KEY (logistics_id) REFERENCES logistics (id) ON DELETE CASCADE
 );
 
 

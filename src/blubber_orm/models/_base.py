@@ -1,7 +1,7 @@
 import json
 import logging
+import psycopg2
 
-from psycopg2 import InternalError, IntegrityError
 from datetime import datetime, date, time
 from abc import ABC, abstractmethod
 
@@ -125,7 +125,7 @@ class Models(AbstractModels):
             try:
                 cursor.execute(SQL, data)
 
-            except IntegrityError.UniqueViolation as e:
+            except psycopg2.errors.UniqueViolation as e:
                 logger.error(e, exc_info=True)
                 Models.db.conn.rollback()
                 return None
@@ -447,8 +447,8 @@ class Models(AbstractModels):
                 elif isinstance(value, date):
                     _serializable_dict[key] = value.strftime("%Y-%m-%d")
                 elif isinstance(value, time):
-                    _serializable_dict[key] = value.strftime("%H:%M")
-                elif key not in sensitive_attributes:
+                    _serializable_dict[key] = value.strftime("%H:%M:%S.%f")
+                elif key not in self.sensitive_attributes:
                     _serializable_dict[key] = value
             _self_dict = _serializable_dict
         return _self_dict

@@ -15,7 +15,7 @@ Blubber requires you to define two variables in your environment: 'BLUBBER_DEBUG
 
 ```
 export BLUBBER_DEBUG=1
-export DATABASE_URL=postgresql://fakeDB:fakePassword@localhost:5432/fakeUser
+export DATABASE_URL=postgresql://fakeUser:fakePassword@localhost:5432/fakeDB
 ```
 
 ### Installing

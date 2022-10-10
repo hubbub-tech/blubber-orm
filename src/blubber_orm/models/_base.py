@@ -443,9 +443,9 @@ class Models(AbstractModels):
                 if key[0] == "_":
                     key = key[1:]
                 if isinstance(value, datetime):
-                    _serializable_dict[key] = value.strftime("%Y-%m-%d %H:%M:%S.%f")
+                    _serializable_dict[key] = datetime.timestamp(value)
                 elif isinstance(value, date):
-                    _serializable_dict[key] = value.strftime("%Y-%m-%d")
+                    _serializable_dict[key] = datetime.timestamp(value)
                 elif isinstance(value, time):
                     _serializable_dict[key] = value.strftime("%H:%M:%S.%f")
                 elif key not in self.sensitive_attributes:

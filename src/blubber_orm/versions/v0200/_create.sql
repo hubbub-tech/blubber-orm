@@ -1,34 +1,25 @@
 CREATE TABLE addresses (
-  line_1 varchar(64),
-  line_2 varchar(64) DEFAULT ' ',
-  city varchar(64),
-  state varchar(64),
-  country varchar(64),
-  zip varchar(64),
   lat float,
   lng float,
-  po_box text,
-  PRIMARY KEY (line_1, line_2, country, zip)
+  formatted varchar(128),
+  description text,
+  PRIMARY KEY (lat, lng)
 );
 
 
 CREATE TABLE from_addresses (
-  line_1 varchar(64),
-  line_2 varchar(64),
-  country varchar(64),
-  zip varchar(16),
-  PRIMARY KEY (line_1, line_2, country, zip),
-  FOREIGN KEY (line_1, line_2, country, zip) REFERENCES addresses (line_1, line_2, country, zip) ON DELETE CASCADE
+  lat float,
+  lng float,
+  PRIMARY KEY (lat, lng),
+  FOREIGN KEY (lat, lng) REFERENCES addresses (lat, lng) ON DELETE CASCADE
 );
 
 
 CREATE TABLE to_addresses (
-  line_1 varchar(64),
-  line_2 varchar(64),
-  country varchar(64),
-  zip varchar(16),
-  PRIMARY KEY (line_1, line_2, country, zip),
-  FOREIGN KEY (line_1, line_2, country, zip) REFERENCES addresses (line_1, line_2, country, zip) ON DELETE CASCADE
+  lat float,
+  lng float,
+  PRIMARY KEY (lat, lng),
+  FOREIGN KEY (lat, lng) REFERENCES addresses (lat, lng) ON DELETE CASCADE
 );
 
 
@@ -44,12 +35,10 @@ CREATE TABLE users (
   dt_last_active timestamp DEFAULT LOCALTIMESTAMP,
   is_blocked boolean DEFAULT FALSE,
   session_key varchar(32),
-  address_line_1 varchar(64),
-  address_line_2 varchar(64),
-  address_country varchar(64),
-  address_zip varchar(16),
+  address_lat float,
+  address_lng float,
   PRIMARY KEY (id),
-  FOREIGN KEY (address_line_1, address_line_2, address_country, address_zip) REFERENCES addresses (line_1, line_2, country, zip)
+  FOREIGN KEY (address_lat, address_lng) REFERENCES addresses (lat, lng)
 );
 
 CREATE TABLE carts (
@@ -110,13 +99,6 @@ CREATE TABLE receivers (
 );
 
 
-CREATE TABLE manufacturers (
-  id SERIAL,
-  brand varchar(32),
-  PRIMARY KEY (id)
-);
-
-
 CREATE TABLE items (
   id SERIAL,
   name varchar(64),
@@ -135,13 +117,10 @@ CREATE TABLE items (
   dim_unit varchar(4),
   locker_id int,
   lister_id int,
-  manufacturer_id int,
-  address_line_1 varchar(64),
-  address_line_2 varchar(64),
-  address_country varchar(64),
-  address_zip varchar(16),
+  address_lat float,
+  address_lng float,
   PRIMARY KEY (id),
-  FOREIGN KEY (address_line_1, address_line_2, address_country, address_zip) REFERENCES addresses (line_1, line_2, country, zip),
+  FOREIGN KEY (address_lat, address_lng) REFERENCES addresses (lat, lng),
   FOREIGN KEY (lister_id) REFERENCES listers (lister_id),
   FOREIGN KEY (locker_id) REFERENCES renters (renter_id),
   FOREIGN KEY (manufacturer_id) REFERENCES manufacturers (id)
@@ -295,19 +274,15 @@ CREATE TABLE logistics (
   dt_received timestamp,
   sender_id int,
   receiver_id int,
-  from_addr_line_1 varchar(64),
-  from_addr_line_2 varchar(64),
-  from_addr_country varchar(64),
-  from_addr_zip varchar(16),
-  to_addr_line_1 varchar(64),
-  to_addr_line_2 varchar(64),
-  to_addr_country varchar(64),
-  to_addr_zip varchar(16),
+  from_addr_lat float,
+  from_addr_lng float,
+  to_addr_lat float,
+  to_addr_lng float,
   PRIMARY KEY (id),
   FOREIGN KEY (sender_id) REFERENCES senders (sender_id),
   FOREIGN KEY (receiver_id) REFERENCES receivers (receiver_id),
-  FOREIGN KEY (from_addr_line_1, from_addr_line_2, from_addr_country, from_addr_zip) REFERENCES from_addresses (line_1, line_2, country, zip),
-  FOREIGN KEY (to_addr_line_1, to_addr_line_2, to_addr_country, to_addr_zip) REFERENCES to_addresses (line_1, line_2, country, zip)
+  FOREIGN KEY (from_addr_lat, from_addr_lng) REFERENCES from_addresses (lat, lng),
+  FOREIGN KEY (to_addr_lat, to_addr_lng) REFERENCES to_addresses (lat, lng)
 );
 
 

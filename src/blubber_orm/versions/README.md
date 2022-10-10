@@ -27,3 +27,8 @@ You'll regret it. Script responsibly.
 * To destroy a version of the database use, `python3 path/to/blubber_cli.py --func destroy --version 020000`.
 * You can only destroy the version that you last created.
 * You should NOT create over an existing set of database tables.
+
+## Reset sequencers on fresh tables with old data
+1. Query for the largest `id` for each table and run the following command:
+2. `SELECT setval('[table_name]_[column_name]_seq', [num]);`
+3. Done.

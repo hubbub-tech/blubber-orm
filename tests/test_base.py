@@ -44,7 +44,7 @@ class TestModels(unittest.TestCase):
         fake_model = FakeModels.get(pkeys_of_correct_type)
         self.assertTrue(isinstance(fake_model, FakeModels))
 
-        pkeys_does_not_exist = {"id": 10000}
+        pkeys_does_not_exist = {"id": -1}
         fake_model = FakeModels.get(pkeys_does_not_exist)
         self.assertTrue(fake_model is None)
 

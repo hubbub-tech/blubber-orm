@@ -122,8 +122,7 @@ CREATE TABLE items (
   PRIMARY KEY (id),
   FOREIGN KEY (address_lat, address_lng) REFERENCES addresses (lat, lng),
   FOREIGN KEY (lister_id) REFERENCES listers (lister_id),
-  FOREIGN KEY (locker_id) REFERENCES renters (renter_id),
-  FOREIGN KEY (manufacturer_id) REFERENCES manufacturers (id)
+  FOREIGN KEY (locker_id) REFERENCES renters (renter_id)
 );
 
 
@@ -172,7 +171,7 @@ CREATE TABLE orders (
  dt_placed timestamp DEFAULT LOCALTIMESTAMP,
  is_canceled boolean DEFAULT FALSE,
  checkout_session_key varchar(32),
- referral varchar(32),
+ referral varchar(128),
  item_id int,
  renter_id int,
  res_dt_start timestamp,

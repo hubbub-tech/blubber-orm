@@ -170,7 +170,7 @@ CREATE TABLE orders (
  id SERIAL,
  dt_placed timestamp DEFAULT LOCALTIMESTAMP,
  is_canceled boolean DEFAULT FALSE,
- checkout_session_key varchar(32),
+ checkout_session_key varchar(64),
  referral varchar(128),
  item_id int,
  renter_id int,
@@ -229,12 +229,10 @@ CREATE TABLE charges (
   txn_processor varchar(16),
   is_paid boolean,
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
-  order_id int,
   payee_id int,
   payer_id int,
   issue_id int, -- optional
   PRIMARY KEY (id),
-  FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
   FOREIGN KEY (payee_id) REFERENCES payees (payee_id),
   FOREIGN KEY (payer_id) REFERENCES payers (payer_id),
   FOREIGN KEY (issue_id) REFERENCES issues (id)

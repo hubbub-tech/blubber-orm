@@ -250,8 +250,6 @@ class Models(AbstractModels):
             FROM {cls.table_name}
             """
 
-        data = (limit,)
-
         logger.debug(f"Query:\n\t{SQL}")
 
         with Models.db.conn.cursor() as cursor:

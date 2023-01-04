@@ -107,6 +107,7 @@ CREATE TABLE items (
   is_transactable boolean DEFAULT TRUE,
   is_featured boolean DEFAULT FALSE,
   dt_created timestamp DEFAULT LOCALTIMESTAMP,
+  dt_last_locked timestamp,
   is_locked boolean DEFAULT FALSE,
   description text,
   weight float,

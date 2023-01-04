@@ -14,8 +14,8 @@ logger.addHandler(logging.NullHandler())
 class AbstractModels(ABC):
     """
     AbstractModels defines the basic functions that each of the Models should
-    come with: CREATE (insert), READ (get, filter), UPDATE (set), and DESTROY
-    (delete).
+    come with: CREATE (insert), READ (get, get_many, get_all, unique, like, filter),
+    UPDATE (set), and DESTROY (delete).
 
     Some other default attributes are `table_name` and `database`. These do
     not correspond to columns from the Hubbub database, but rather are functional.
@@ -128,7 +128,13 @@ class Models(AbstractModels):
             except psycopg2.errors.UniqueViolation as e:
                 logger.error(e, exc_info=True)
                 Models.db.conn.rollback()
-                return None
+
+                pkeys = {}
+                for primary in cls.table_primaries:
+                    attribute = attributes[primary]
+                    pkeys[primary] = attribute
+
+                return cls.get(pkeys)
 
             logger.debug(f"Query:\n\t{SQL}")
 
